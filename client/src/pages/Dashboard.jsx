@@ -21,6 +21,24 @@ const PlusIcon = () => (
     </svg>
 );
 
+const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good Morning!';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon!';
+    if (hour >= 17 && hour < 22) return 'Good Evening!';
+    
+    // 10 PM to 5 AM (Night owl mode)
+    const nightNotes = [
+        "Up late, huh? 🌙",
+        "Burning the midnight oil? 🕯️",
+        "Night owl mode activated 🦉",
+        "Still awake? 🌌",
+        "Quiet hours 🌙",
+        "Late night chats? 🤫"
+    ];
+    return nightNotes[Math.floor(Math.random() * nightNotes.length)];
+};
+
 const Dashboard = () => {
     const navigate = useNavigate();
     const [userInfo, setUserInfo] = useState(null);
@@ -336,7 +354,7 @@ const Dashboard = () => {
                                 {userInfo.username.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}!</p>
+                                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{getGreeting()}</p>
                                 <h2 className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight">{userInfo.username}</h2>
                             </div>
                         </div>
