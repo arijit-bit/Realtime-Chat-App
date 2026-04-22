@@ -373,7 +373,7 @@ const Dashboard = () => {
                                     <MoreIcon />
                                 </button>
                                 {showMoreMenu && (
-                                    <div onClick={e => e.stopPropagation()} className="absolute right-0 top-10 w-48 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700/80 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
+                                    <div onClick={e => e.stopPropagation()} className="absolute right-0 top-10 w-40 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700/80 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
                                         <button onClick={openSettings} className="w-full flex items-center gap-2.5 px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                             <span>Edit Profile</span>
                                             <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
