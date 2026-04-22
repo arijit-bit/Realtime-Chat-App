@@ -58,6 +58,7 @@ const Dashboard = () => {
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [editUsername, setEditUsername] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [showMobileChat, setShowMobileChat] = useState(false);
 
     useEffect(() => {
         const totalUnread = conversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
@@ -215,6 +216,7 @@ const Dashboard = () => {
         const roomName = p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
         setActiveRoom(roomName);
         setActiveTab('chats');
+        setShowMobileChat(true);
     };
 
     // ── Group creation ──────────────────────────────────────────────────────
@@ -224,7 +226,7 @@ const Dashboard = () => {
             const targetUserId = selectedUsers[0];
             const p1 = userInfo.id, p2 = targetUserId;
             const oneOnOneRoomName = p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
-            setShowGroupModal(false); setSelectedUsers([]); setActiveRoom(oneOnOneRoomName); return;
+            setShowGroupModal(false); setSelectedUsers([]); setActiveRoom(oneOnOneRoomName); setShowMobileChat(true); return;
         }
         if (!newRoomName || newRoomName.trim() === '') {
             alert('Provide a group name or select exactly ONE user.'); return;
@@ -241,6 +243,7 @@ const Dashboard = () => {
                 await fetchConversations(userInfo.id);
                 setActiveRoom(data.roomName);
                 setActiveTab('groups');
+                setShowMobileChat(true);
             } else { alert(data.message || 'Error creating room'); }
         } catch (err) { console.error(err); }
     };
@@ -288,7 +291,7 @@ const Dashboard = () => {
         return (
             <div
                 key={conv.id}
-                onClick={() => { setActiveRoom(conv.id); setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unreadCount: 0 } : c)); }}
+                onClick={() => { setActiveRoom(conv.id); setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unreadCount: 0 } : c)); setShowMobileChat(true); }}
                 className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all border-l-[3px] ${isActive ? 'bg-blue-50/50 dark:bg-slate-800/80 border-[#0078fe]' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
             >
                 <div className="relative shrink-0">
@@ -322,7 +325,7 @@ const Dashboard = () => {
         <div className="flex h-screen bg-white dark:bg-[#0f172a] overflow-hidden font-sans transition-colors duration-300" onClick={() => setShowMoreMenu(false)}>
 
             {/* ── Sidebar ─────────────────────────────────────────────────── */}
-            <div className="w-[320px] lg:w-[360px] shrink-0 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-[#1e293b] z-20 transition-colors duration-300 rounded-b-lg">
+            <div className={`${showMobileChat ? 'hidden md:flex' : 'flex'} w-full md:w-[320px] lg:w-[360px] shrink-0 border-r border-slate-200 dark:border-slate-800 flex-col bg-white dark:bg-[#1e293b] z-20 transition-colors duration-300 rounded-b-lg`}>
 
                 {/* Header */}
                 <div className="px-4 pt-5 pb-3 bg-indigo-50/80 dark:bg-[#1e2335] rounded-3xl rounded-tl-none">
@@ -558,7 +561,7 @@ const Dashboard = () => {
             </div>
 
             {/* ── Chat Canvas ──────────────────────────────────────────────── */}
-            <div className="flex-1 flex flex-col min-w-0 relative">
+            <div className={`${showMobileChat ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 relative`}>
                 <ChatWindow
                     socket={socket}
                     currentUser={userInfo}
@@ -568,6 +571,7 @@ const Dashboard = () => {
                     targetUserId={conversations.find(c => c.id === activeRoom)?.targetUserId}
                     contacts={contacts}
                     onAddContact={handleAddContact}
+                    onBack={() => setShowMobileChat(false)}
                 />
             </div>
 
