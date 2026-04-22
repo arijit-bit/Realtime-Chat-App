@@ -12,11 +12,7 @@ connectDB();
 const app = express();
 
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://172.20.10.7:3000',
-  'http://172.20.10.7:5173',
-  'http://172.20.10.5:3000',
+  'https://realtime-chat-app-delta-seven.vercel.app'
 ];
 
 app.use(cors({
