@@ -21,6 +21,8 @@ const PlusIcon = () => (
     </svg>
 );
 
+let currentNightNote = null;
+
 const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return 'Good Morning!';
@@ -28,15 +30,18 @@ const getGreeting = () => {
     if (hour >= 17 && hour < 22) return 'Good Evening!';
     
     // 10 PM to 5 AM (Night owl mode)
-    const nightNotes = [
-        "Up late, huh? 🌙",
-        "Burning the midnight oil? 🕯️",
-        "Night owl mode activated 🦉",
-        "Still awake? 🌌",
-        "Quiet hours 🌙",
-        "Late night chats? 🤫"
-    ];
-    return nightNotes[Math.floor(Math.random() * nightNotes.length)];
+    if (!currentNightNote) {
+        const nightNotes = [
+            "Up late, huh? 🌙",
+            "Burning the midnight oil? 🕯️",
+            "Night owl mode activated 🦉",
+            "Still awake? 🌌",
+            "Quiet hours 🌙",
+            "Late night chats? 🤫"
+        ];
+        currentNightNote = nightNotes[Math.floor(Math.random() * nightNotes.length)];
+    }
+    return currentNightNote;
 };
 
 const Dashboard = () => {
@@ -370,8 +375,17 @@ const Dashboard = () => {
                                 {showMoreMenu && (
                                     <div onClick={e => e.stopPropagation()} className="absolute right-0 top-10 w-48 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700/80 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
                                         <button onClick={openSettings} className="w-full text-left px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Edit Profile</button>
-                                        <button onClick={toggleTheme} className="w-full text-left px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                            {isDarkMode ? '☀ Light Mode' : '🌙 Dark Mode'}
+                                        <button onClick={toggleTheme} className="w-full flex justify-between items-center px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                            <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                                            {isDarkMode ? (
+                                                <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                                </svg>
+                                            )}
                                         </button>
                                         <div className="border-t border-slate-100 dark:border-slate-700"></div>
                                         <button onClick={() => { localStorage.removeItem('userInfo'); socket.disconnect(); navigate('/login'); }} className="w-full text-left px-4 py-3 text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">Sign Out</button>
