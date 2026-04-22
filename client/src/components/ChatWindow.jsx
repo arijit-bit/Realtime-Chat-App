@@ -215,9 +215,9 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
         senderInfo.id !== currentUser.id;
 
     return (
-        <div className="flex flex-col h-full relative transition-colors duration-300">
+        <div className="flex flex-col h-full relative transition-colors duration-300 pt-[76px] md:pt-0">
             {/* Header */}
-            <div className="px-4 md:px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b] shrink-0 z-20 transition-colors duration-300">
+            <div className="fixed top-0 left-0 w-screen md:relative md:w-auto px-4 md:px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b] shrink-0 z-30 transition-colors duration-300">
                  <div className="flex items-center">
                      {onBack && (
                          <button onClick={onBack} className="md:hidden mr-3 p-2 -ml-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
