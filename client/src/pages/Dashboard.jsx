@@ -374,8 +374,13 @@ const Dashboard = () => {
                                 </button>
                                 {showMoreMenu && (
                                     <div onClick={e => e.stopPropagation()} className="absolute right-0 top-10 w-48 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700/80 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
-                                        <button onClick={openSettings} className="w-full text-left px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Edit Profile</button>
-                                        <button onClick={toggleTheme} className="w-full flex justify-between items-center px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                        <button onClick={openSettings} className="w-full flex items-center gap-2.5 px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                            <span>Edit Profile</span>
+                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </button>
+                                        <button onClick={toggleTheme} className="w-full flex items-center gap-2.5 px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                             <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
                                             {isDarkMode ? (
                                                 <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -388,7 +393,12 @@ const Dashboard = () => {
                                             )}
                                         </button>
                                         <div className="border-t border-slate-100 dark:border-slate-700"></div>
-                                        <button onClick={() => { localStorage.removeItem('userInfo'); socket.disconnect(); navigate('/login'); }} className="w-full text-left px-4 py-3 text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">Sign Out</button>
+                                        <button onClick={() => { localStorage.removeItem('userInfo'); socket.disconnect(); navigate('/login'); }} className="w-full flex items-center gap-2.5 px-4 py-3 text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                                            <span>Sign Out</span>
+                                            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 )}
                             </div>
