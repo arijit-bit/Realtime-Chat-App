@@ -322,7 +322,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="flex h-screen bg-white dark:bg-[#0f172a] overflow-hidden font-sans transition-colors duration-300" onClick={() => setShowMoreMenu(false)}>
+        <div className="flex h-[100dvh] bg-white dark:bg-[#0f172a] overflow-hidden font-sans transition-colors duration-300" onClick={() => setShowMoreMenu(false)}>
 
             {/* ── Sidebar ─────────────────────────────────────────────────── */}
             <div className={`${showMobileChat ? 'hidden md:flex' : 'flex'} w-full md:w-[320px] lg:w-[360px] shrink-0 border-r border-slate-200 dark:border-slate-800 flex-col bg-white dark:bg-[#1e293b] z-20 transition-colors duration-300 rounded-b-lg`}>
@@ -395,7 +395,7 @@ const Dashboard = () => {
                                 placeholder={`Search ${activeTab}...`}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[14px] rounded-lg pl-9 pr-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-base rounded-lg pl-9 pr-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             />
                             <svg className="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -589,7 +589,7 @@ const Dashboard = () => {
                             <div>
                                 <label className="block text-[12px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Username</label>
                                 <input type="text" value={editUsername} onChange={e => setEditUsername(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg py-3 px-4 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors text-[15px]" />
+                                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg py-3 px-4 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors text-base" />
                             </div>
                             <div className="flex items-center justify-between p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                                 <span className="text-[14px] font-semibold text-slate-700 dark:text-slate-200">Dark Mode</span>
@@ -624,7 +624,7 @@ const Dashboard = () => {
                             <div>
                                 <label className="block text-[12px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Group Name</label>
                                 <input autoFocus type="text" value={newRoomName} onChange={e => setNewRoomName(e.target.value)} placeholder="e.g. Design Team"
-                                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg py-3 px-4 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors text-[15px] placeholder:text-slate-400" />
+                                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg py-3 px-4 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors text-base placeholder:text-slate-400" />
                             </div>
                             <div>
                                 <label className="block text-[12px] font-bold text-slate-400 uppercase tracking-wide mb-2">Add Members</label>

@@ -217,7 +217,7 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
     return (
         <div className="flex flex-col h-full relative transition-colors duration-300">
             {/* Header */}
-            <div className="px-4 md:px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b] sticky top-0 z-20 transition-colors duration-300">
+            <div className="px-4 md:px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b] shrink-0 z-20 transition-colors duration-300">
                  <div className="flex items-center">
                      {onBack && (
                          <button onClick={onBack} className="md:hidden mr-3 p-2 -ml-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
@@ -285,7 +285,7 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
             )}
 
             {/* Canvas */}
-            <div className="flex-1 px-4 sm:px-6 md:px-8 py-6 pb-32 overflow-y-auto space-y-6 bg-brand-light dark:bg-[#0f172a] z-0 transition-colors duration-300">
+            <div className="flex-1 px-4 sm:px-6 md:px-8 py-6 overflow-y-auto space-y-6 bg-brand-light dark:bg-[#0f172a] z-0 transition-colors duration-300">
                 {messages.length === 0 && (
                      <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 space-y-4">
                          <div className="w-24 h-24 rounded-full bg-white dark:bg-[#1e293b] shadow-sm flex items-center justify-center border border-slate-100 dark:border-slate-800">
@@ -342,7 +342,7 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
             </div>
 
             {/* Input Form Fixed at Bottom */}
-            <div className="absolute bottom-4 w-full left-0 px-4 md:px-6 z-10">
+            <div className="w-full shrink-0 px-4 md:px-6 py-3 z-10 bg-brand-light dark:bg-[#0f172a]">
                  <form onSubmit={handleSend} className="max-w-4xl mx-auto flex items-center gap-3 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 rounded-full p-2 pl-4">
 
                      <button type="button" className="p-2 text-slate-400 hover:text-brand-blue dark:hover:text-white transition-colors rounded-full shrink-0" title="Attach image">
@@ -354,7 +354,7 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
                          value={currentMessage}
                          onChange={handleTyping}
                          placeholder="Type your message..."
-                         className="flex-1 bg-transparent py-2.5 text-[15px] font-medium text-brand-text dark:text-white focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                         className="flex-1 bg-transparent py-2.5 text-base font-medium text-brand-text dark:text-white focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                      />
 
                      <button
