@@ -8,6 +8,15 @@
   }
 }
 
+html, body, #root {
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
 /* Custom Webkit scrollbar for premium feel */
 ::-webkit-scrollbar {
     width: 6px;

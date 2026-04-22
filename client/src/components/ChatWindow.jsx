@@ -215,9 +215,9 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
         senderInfo.id !== currentUser.id;
 
     return (
-        <div className="flex flex-col h-full relative transition-colors duration-300 pt-[76px] md:pt-0">
+        <div className="flex flex-col h-full relative transition-colors duration-300">
             {/* Header */}
-            <div className="fixed top-0 left-0 w-screen md:relative md:w-auto px-4 md:px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b] shrink-0 z-30 transition-colors duration-300">
+            <div className="px-4 md:px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b] shrink-0 z-30 transition-colors duration-300">
                  <div className="flex items-center">
                      {onBack && (
                          <button onClick={onBack} className="md:hidden mr-3 p-2 -ml-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
@@ -362,7 +362,7 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
                          disabled={!currentMessage.trim()}
                          className="w-10 h-10 shrink-0 bg-[#0078fe] hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-full flex items-center justify-center transition-colors disabled:cursor-not-allowed"
                      >
-                        <svg className="w-5 h-5 -ml-0.5 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                        <svg className="w-5 h-5 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
                      </button>
                  </form>
             </div>
