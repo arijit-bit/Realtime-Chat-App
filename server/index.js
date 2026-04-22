@@ -12,7 +12,7 @@ connectDB();
 const app = express();
 
 const allowedOrigins = [
-  'https://realtime-chat-app-delta-seven.vercel.app'
+  'https://pegion-mail.vercel.app'
 ];
 
 app.use(cors({
