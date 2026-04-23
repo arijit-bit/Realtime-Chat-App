@@ -6,6 +6,11 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
     const [currentMessage, setCurrentMessage] = useState('');
     const [typingUsers, setTypingUsers] = useState([]);
 
+    // Pagination & Cache State
+    const [hasMore, setHasMore] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [isOffline, setIsOffline] = useState(false);
+
     // Member management state
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [usersToInvite, setUsersToInvite] = useState([]);
@@ -48,11 +53,35 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
     useEffect(() => {
         if (!socket || !roomId) return;
 
+        setHasMore(false);
+        setIsOffline(false);
+        setIsLoadingMore(false);
+
+        // 1. Try to load from local storage immediately
+        const cached = localStorage.getItem(`chat_history_${roomId}`);
+        if (cached) {
+            try {
+                setMessages(JSON.parse(cached));
+                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
+            } catch (e) { console.error('Failed to parse cached messages'); }
+        } else {
+            setMessages([]);
+        }
+
         const fetchHistory = async () => {
              try {
-                const response = await fetch(`${API_URL}/api/messages/${roomId}`);
-                const historyData = await response.json();
+                const response = await fetch(`${API_URL}/api/messages/${roomId}?limit=50&skip=0`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                
+                const historyData = data.messages || [];
                 setMessages(historyData);
+                setHasMore(data.hasMore || false);
+                setIsOffline(false);
+                
+                // Cache latest 50 messages
+                localStorage.setItem(`chat_history_${roomId}`, JSON.stringify(historyData.slice(-50)));
+
                 socket.emit('messages_read', { roomId, readerId: currentUser.id });
 
                 // For DMs: extract the other person's info from message history
@@ -63,7 +92,10 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
                         setSenderInfo({ id: otherMsg.senderId, username: otherMsg.senderName });
                     }
                 }
-             } catch (err) { console.error("Failed to load chat history", err); }
+             } catch (err) { 
+                 console.error("Failed to load chat history", err);
+                 setIsOffline(true);
+             }
         };
         fetchHistory();
 
@@ -113,8 +145,51 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
     }, [socket, roomId, currentUser.id]);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        if (!isLoadingMore) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, isLoadingMore]);
+
+    // Keep cache updated when messages change (latest 50)
+    useEffect(() => {
+        if (messages.length > 0 && roomId) {
+            const latestMessages = messages.slice(-50);
+            localStorage.setItem(`chat_history_${roomId}`, JSON.stringify(latestMessages));
+        }
+    }, [messages, roomId]);
+
+    const handleScroll = async (e) => {
+        const container = e.target;
+        if (container.scrollTop === 0 && hasMore && !isLoadingMore && !isOffline) {
+            setIsLoadingMore(true);
+            const previousScrollHeight = container.scrollHeight;
+            
+            try {
+                const skip = messages.length;
+                const response = await fetch(`${API_URL}/api/messages/${roomId}?limit=50&skip=${skip}`);
+                if (!response.ok) throw new Error('Failed to fetch');
+                const data = await response.json();
+                
+                if (data.messages && data.messages.length > 0) {
+                    setMessages(prev => [...data.messages, ...prev]);
+                    setHasMore(data.hasMore);
+                    
+                    setTimeout(() => {
+                        if (container) {
+                            container.scrollTop = container.scrollHeight - previousScrollHeight;
+                        }
+                        setIsLoadingMore(false);
+                    }, 0);
+                } else {
+                    setHasMore(false);
+                    setIsLoadingMore(false);
+                }
+            } catch (err) {
+                console.error('Error fetching older messages', err);
+                setIsLoadingMore(false);
+            }
+        }
+    };
 
     const handleTyping = (e) => {
         setCurrentMessage(e.target.value);
@@ -284,9 +359,24 @@ const ChatWindow = ({ socket, currentUser, roomId, roomName, isGroupChat, target
                 </div>
             )}
 
+            {/* ── Offline Banner ─────────────────────────────────────────────── */}
+            {isOffline && (
+                <div className="mx-4 mt-3 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
+                    <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="text-[13px] text-red-700 dark:text-red-300 font-semibold">You are offline. Showing cached messages.</p>
+                </div>
+            )}
+
             {/* Canvas */}
-            <div className="flex-1 px-4 sm:px-6 md:px-8 py-6 overflow-y-auto space-y-6 bg-brand-light dark:bg-[#0f172a] z-0 transition-colors duration-300">
-                {messages.length === 0 && (
+            <div onScroll={handleScroll} className="flex-1 px-4 sm:px-6 md:px-8 py-6 overflow-y-auto space-y-6 bg-brand-light dark:bg-[#0f172a] z-0 transition-colors duration-300">
+                {isLoadingMore && (
+                    <div className="flex justify-center py-2">
+                        <div className="w-5 h-5 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                )}
+                {messages.length === 0 && !isLoadingMore && (
                      <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 space-y-4">
                          <div className="w-24 h-24 rounded-full bg-white dark:bg-[#1e293b] shadow-sm flex items-center justify-center border border-slate-100 dark:border-slate-800">
                              <svg className="w-10 h-10 text-brand-blue opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
