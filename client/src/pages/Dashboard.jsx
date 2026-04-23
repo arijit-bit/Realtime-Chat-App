@@ -114,6 +114,20 @@ const Dashboard = () => {
         const parsedUser = JSON.parse(storedUser);
         setUserInfo(parsedUser);
 
+        // Immediately load cache if available
+        const cachedConversations = localStorage.getItem(`conversations_${parsedUser.id}`);
+        if (cachedConversations) {
+            try { setConversations(JSON.parse(cachedConversations)); } catch(e){}
+        }
+        const cachedContacts = localStorage.getItem(`contacts_${parsedUser.id}`);
+        if (cachedContacts) {
+            try { setContacts(JSON.parse(cachedContacts)); } catch(e){}
+        }
+        const cachedUsersForModal = localStorage.getItem('users_for_modal');
+        if (cachedUsersForModal) {
+            try { setUsersForModal(JSON.parse(cachedUsersForModal)); } catch(e){}
+        }
+
         const newSocket = io(API_URL, { query: { userId: parsedUser.id } });
         setSocket(newSocket);
 
@@ -160,6 +174,7 @@ const Dashboard = () => {
             const res = await fetch(`${API_URL}/api/conversations?userId=${userId}`);
             const data = await res.json();
             setConversations(data);
+            localStorage.setItem(`conversations_${userId}`, JSON.stringify(data));
         } catch (err) { console.error(err); }
     };
 
@@ -168,6 +183,7 @@ const Dashboard = () => {
             const res = await fetch(`${API_URL}/api/users`);
             const data = await res.json();
             setUsersForModal(data);
+            localStorage.setItem('users_for_modal', JSON.stringify(data));
         } catch (err) { console.error(err); }
     };
 
@@ -175,9 +191,25 @@ const Dashboard = () => {
         try {
             const res = await fetch(`${API_URL}/api/users/${userId}/contacts`);
             const data = await res.json();
-            if (Array.isArray(data)) setContacts(data);
+            if (Array.isArray(data)) {
+                setContacts(data);
+                localStorage.setItem(`contacts_${userId}`, JSON.stringify(data));
+            }
         } catch (err) { console.error('Error fetching contacts:', err); }
     };
+
+    // Keep localStorage updated when sockets mutate state
+    useEffect(() => {
+        if (userInfo && conversations.length > 0) {
+            localStorage.setItem(`conversations_${userInfo.id}`, JSON.stringify(conversations));
+        }
+    }, [conversations, userInfo]);
+
+    useEffect(() => {
+        if (userInfo && contacts.length > 0) {
+            localStorage.setItem(`contacts_${userInfo.id}`, JSON.stringify(contacts));
+        }
+    }, [contacts, userInfo]);
 
     useEffect(() => {
         if (activeTab === 'contacts' && searchTerm.trim().length > 0 && userInfo) {
