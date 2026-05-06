@@ -57,6 +57,7 @@ const ChatWindow = ({
   const [typingUsers, setTypingUsers] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [usersToInvite, setUsersToInvite] = useState([]);
@@ -87,12 +88,15 @@ const ChatWindow = ({
     if (cached) {
       try {
         setMessages(JSON.parse(cached));
+        setIsInitialLoading(false);
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
       } catch (error) {
         console.error('Failed to parse cached messages', error);
+        setIsInitialLoading(true);
       }
     } else {
       setMessages([]);
+      setIsInitialLoading(true);
     }
 
     const fetchHistory = async () => {
@@ -123,6 +127,8 @@ const ChatWindow = ({
       } catch (error) {
         console.error('Failed to load chat history', error);
         setIsOffline(true);
+      } finally {
+        setIsInitialLoading(false);
       }
     };
 
@@ -520,10 +526,24 @@ const ChatWindow = ({
           </div>
         )}
 
-        <div
-          onScroll={handleScroll}
-          className="chat-scroll flex-1 overflow-y-auto px-4 py-6 md:px-6"
-        >
+        <div className="relative flex-1">
+          {isInitialLoading && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/72 backdrop-blur-2xl dark:bg-slate-950/72">
+              <div className="flex h-16 w-16 items-center justify-center rounded-[28px] bg-white/85 shadow-lg shadow-slate-950/10 dark:bg-slate-900/85">
+                <div className="h-8 w-8 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
+              </div>
+              <div className="space-y-2 text-center">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Loading conversation</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Pulling in messages for this room...
+                </p>
+              </div>
+            </div>
+          )}
+          <div
+            onScroll={handleScroll}
+            className="chat-scroll h-full overflow-y-auto px-4 py-6 md:px-6"
+          >
           {isLoadingMore && (
             <div className="mb-3 flex justify-center">
               <div className="h-6 w-6 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
@@ -608,6 +628,7 @@ const ChatWindow = ({
           </div>
 
           <div ref={messagesEndRef} />
+          </div>
         </div>
 
         <div className="border-t border-white/60 bg-white/35 px-4 py-4 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/30 md:px-6">

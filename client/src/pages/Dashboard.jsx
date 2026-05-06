@@ -130,7 +130,6 @@ const Dashboard = () => {
   const [conversationFilter, setConversationFilter] = useState('direct');
   const [activeRoom, setActiveRoom] = useState('Global Lounge');
   const [conversations, setConversations] = useState([]);
-  const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [contacts, setContacts] = useState([]);
   const [savedContactResults, setSavedContactResults] = useState([]);
@@ -317,7 +316,6 @@ const Dashboard = () => {
   };
 
   const fetchConversations = async (userId) => {
-    setIsLoadingChats(true);
     try {
       const response = await fetch(`${API_URL}/api/conversations?userId=${userId}`);
       const data = await response.json();
@@ -334,8 +332,6 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error(error);
-    } finally {
-      setIsLoadingChats(false);
     }
   };
 
@@ -906,37 +902,7 @@ const Dashboard = () => {
           mobileSection === 'chats' && showMobileChat ? 'hidden md:flex' : 'flex'
         }`}
       >
-        {isLoadingChats && (activeSection === 'chats' || mobileSection === 'chats') ? (
-          <div className="flex flex-1 flex-col gap-4">
-            <div className="glass-panel rounded-[32px] px-4 py-4">
-              <div className="h-3 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-              <div className="mt-3 h-8 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-            </div>
-            <div className="glass-panel rounded-[32px] p-3">
-              <div className="h-12 animate-pulse rounded-[22px] bg-slate-200 dark:bg-slate-700" />
-              <div className="mt-3 flex gap-2">
-                <div className="h-9 w-20 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-                <div className="h-9 w-20 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-              </div>
-            </div>
-            <div className="flex-1 space-y-3 overflow-hidden pt-1">
-              {[...Array(6)].map((_, index) => (
-                <div
-                  key={index}
-                  className="glass-panel flex items-center gap-3 rounded-[28px] px-3 py-3"
-                >
-                  <div className="h-12 w-12 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700" />
-                  <div className="flex-1">
-                    <div className="h-4 w-28 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-                    <div className="mt-2 h-3 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          renderSidebarPane()
-        )}
+        {renderSidebarPane()}
       </div>
 
       <main
