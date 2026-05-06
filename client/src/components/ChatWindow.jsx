@@ -40,21 +40,6 @@ const StatusIcon = ({ message }) => {
   return <CheckCheck className="h-3.5 w-3.5 text-slate-400/90" strokeWidth={2.5} />;
 };
 
-const BubbleTail = ({ own }) => (
-  <span
-    className={`absolute bottom-0 h-4 w-4 ${own ? '-right-1.5' : '-left-1.5'}`}
-    aria-hidden="true"
-  >
-    <span
-      className={`block h-full w-full rotate-45 rounded-[5px] ${
-        own
-          ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
-          : 'border border-white/70 bg-white dark:border-white/10 dark:bg-slate-900'
-      }`}
-    />
-  </span>
-);
-
 const ChatWindow = ({
   socket,
   currentUser,
@@ -584,14 +569,13 @@ const ChatWindow = ({
                       } ${
                         message.groupedStart
                           ? message.own
-                            ? 'rounded-br-md'
-                            : 'rounded-bl-md'
-                          : message.own
+                            ? 'rounded-br-md rounded-tr-[20px]'
+                          : 'rounded-bl-md'
+                        : message.own
                             ? 'rounded-br-[20px]'
                             : 'rounded-bl-[20px]'
                       } px-4 py-3`}
                     >
-                      {message.groupedStart && <BubbleTail own={message.own} />}
                       <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
                       <div
                         className={`mt-2 flex items-center gap-1.5 text-[11px] ${
