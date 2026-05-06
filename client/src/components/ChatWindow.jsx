@@ -58,6 +58,7 @@ const ChatWindow = ({
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(() => !Boolean(localStorage.getItem(`chat_history_${roomId}`)));
+  const [hasLoadedRoom, setHasLoadedRoom] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [usersToInvite, setUsersToInvite] = useState([]);
@@ -84,6 +85,7 @@ const ChatWindow = ({
     setIsOffline(false);
     setIsLoadingMore(false);
     setTypingUsers([]);
+    setHasLoadedRoom(false);
 
     const cached = localStorage.getItem(`chat_history_${roomId}`);
     if (cached) {
@@ -130,6 +132,7 @@ const ChatWindow = ({
         setIsOffline(true);
       } finally {
         setIsInitialLoading(false);
+        setHasLoadedRoom(true);
       }
     };
 
@@ -551,7 +554,7 @@ const ChatWindow = ({
             </div>
           )}
 
-          {messageRows.length === 0 && !isLoadingMore && !isInitialLoading && (
+          {messageRows.length === 0 && !isLoadingMore && !isInitialLoading && hasLoadedRoom && (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-white/80 shadow-lg shadow-slate-950/5 dark:bg-slate-900/70">
                 <MoreHorizontal className="h-8 w-8 text-slate-400" />
