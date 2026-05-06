@@ -241,8 +241,8 @@ const ChatWindow = ({
     const container = event.target;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     shouldStickToBottomRef.current = distanceFromBottom < 120;
-
-    if (container.scrollTop !== 0 || !hasMore || isLoadingMore || isOffline) return;
+    const nearTopThreshold = 32;
+    if (container.scrollTop > nearTopThreshold || !hasMore || isLoadingMore || isOffline) return;
 
     setIsLoadingMore(true);
     const previousScrollHeight = container.scrollHeight;
