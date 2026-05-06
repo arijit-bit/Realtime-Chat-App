@@ -30,14 +30,14 @@ const normalizeId = (value) => String(value ?? '');
 
 const StatusIcon = ({ message }) => {
   if (message.isRead) {
-    return <CheckCheck className="h-3.5 w-3.5 text-sky-400" strokeWidth={2.5} />;
+    return <CheckCheck className="h-3.5 w-3.5 text-[#53bdeb]" strokeWidth={2.5} />;
   }
 
   if (message._optimistic) {
-    return <Check className="h-3.5 w-3.5 text-slate-400/90" strokeWidth={2.5} />;
+    return <Check className="h-3.5 w-3.5 text-white/65" strokeWidth={2.5} />;
   }
 
-  return <CheckCheck className="h-3.5 w-3.5 text-slate-400/90" strokeWidth={2.5} />;
+  return <CheckCheck className="h-3.5 w-3.5 text-white/65" strokeWidth={2.5} />;
 };
 
 const ChatWindow = ({
@@ -57,7 +57,7 @@ const ChatWindow = ({
   const [typingUsers, setTypingUsers] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(() => !Boolean(localStorage.getItem(`chat_history_${roomId}`)));
   const [isOffline, setIsOffline] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [usersToInvite, setUsersToInvite] = useState([]);
@@ -550,7 +550,7 @@ const ChatWindow = ({
             </div>
           )}
 
-          {messageRows.length === 0 && !isLoadingMore && (
+          {messageRows.length === 0 && !isLoadingMore && !isInitialLoading && (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-white/80 shadow-lg shadow-slate-950/5 dark:bg-slate-900/70">
                 <MoreHorizontal className="h-8 w-8 text-slate-400" />
@@ -584,25 +584,25 @@ const ChatWindow = ({
                     <div
                       className={`relative transition ${message._animate ? 'message-pop' : ''} ${
                         message.own
-                          ? 'rounded-[20px] bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20'
-                          : 'rounded-[20px] border border-white/70 bg-white text-slate-900 shadow-lg shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100'
+                          ? 'rounded-[18px] bg-[#0b8f72] text-white shadow-sm'
+                          : 'rounded-[18px] border border-white/70 bg-white text-slate-900 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:text-slate-100'
                       } ${
                         message.groupedStart
                           ? message.own
-                            ? 'rounded-br-md rounded-tr-[20px]'
-                          : 'rounded-bl-md'
+                            ? 'rounded-br-md'
+                            : 'rounded-bl-md'
                         : message.own
-                            ? 'rounded-br-[20px]'
-                            : 'rounded-bl-[20px]'
-                      } px-4 py-3`}
+                            ? 'rounded-br-[18px]'
+                            : 'rounded-bl-[18px]'
+                      } max-w-full px-4 py-2.5`}
                     >
                       <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
                       <div
-                        className={`mt-2 flex items-center gap-1.5 text-[11px] ${
-                          message.own ? 'justify-end text-white/70' : 'justify-end text-slate-400 dark:text-slate-500'
+                        className={`mt-1.5 flex items-center gap-1 text-[11px] ${
+                          message.own ? 'justify-end text-white/75' : 'justify-end text-slate-400 dark:text-slate-500'
                         }`}
                       >
-                        <span>{formatMessageTime(message.timestamp)}</span>
+                        <span className="leading-none">{formatMessageTime(message.timestamp)}</span>
                         {message.own && <StatusIcon message={message} />}
                       </div>
                     </div>

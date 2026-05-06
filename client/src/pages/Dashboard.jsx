@@ -82,14 +82,17 @@ const DesktopNavButton = ({ active, icon: Icon, label, onClick }) => (
     type="button"
     onClick={onClick}
     title={label}
-    className={`group relative flex h-12 w-12 items-center justify-center rounded-2xl transition ${
+    className={`group relative flex h-12 w-12 items-center justify-center rounded-2xl border transition ${
       active
-        ? 'bg-white text-sky-600 shadow-lg shadow-sky-500/20 dark:bg-slate-800 dark:text-sky-300'
-        : 'text-slate-500 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-white'
+        ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
+        : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
     }`}
   >
+    {active && (
+      <span className="absolute -left-5 h-7 w-1 rounded-full bg-slate-900 dark:bg-white" />
+    )}
     <Icon className="h-5 w-5" />
-    <span className="pointer-events-none absolute left-full ml-3 hidden rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900 xl:hidden">
+    <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
       {label}
     </span>
   </button>
@@ -529,7 +532,7 @@ const Dashboard = () => {
         onClick={() => openConversation(conversation.id)}
         className={`group flex w-full items-center gap-3 rounded-[28px] border px-3 py-3 text-left transition ${
           isActive
-            ? 'border-sky-200 bg-white shadow-lg shadow-sky-500/10 dark:border-sky-500/20 dark:bg-slate-900/80'
+            ? 'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900/80'
             : 'border-transparent bg-white/55 hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60'
         }`}
       >
@@ -851,7 +854,7 @@ const Dashboard = () => {
     <div className="relative flex h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_28%),linear-gradient(180deg,_#f4fbff_0%,_#eef4f8_100%)] text-slate-900 transition-colors duration-500 dark:bg-[radial-gradient(circle_at_top_left,_rgba(14,116,144,0.24),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.14),_transparent_28%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-100">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:24px_24px] opacity-40 dark:opacity-15" />
 
-      <aside className="relative z-10 hidden w-24 shrink-0 flex-col items-center justify-between border-r border-white/50 px-4 py-6 backdrop-blur-xl dark:border-white/10 md:flex">
+      <aside className="relative z-20 hidden w-24 shrink-0 flex-col items-center justify-between overflow-visible border-r border-white/50 px-4 py-6 backdrop-blur-xl dark:border-white/10 md:flex">
         <div className="flex flex-col items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-[24px] bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-900">
             <Sparkles className="h-6 w-6" />
