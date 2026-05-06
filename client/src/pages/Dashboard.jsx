@@ -914,6 +914,7 @@ const Dashboard = () => {
         }`}
       >
         <ChatWindow
+          key={activeRoom}
           socket={socket}
           currentUser={userInfo}
           roomId={activeRoom}
