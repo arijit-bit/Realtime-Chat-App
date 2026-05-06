@@ -62,7 +62,7 @@ const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
   return (
     <div className="relative shrink-0">
       <div
-        className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${classes} text-sm font-semibold uppercase text-white shadow-lg shadow-slate-950/10`}
+        className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${classes} text-sm font-semibold uppercase text-white shadow-lg shadow-slate-950/10`}
       >
         {isGroup ? <Users className="h-5 w-5" /> : (name || '?').slice(0, 1)}
       </div>
@@ -82,7 +82,7 @@ const DesktopNavButton = ({ active, icon: Icon, label, onClick }) => (
     type="button"
     onClick={onClick}
     title={label}
-    className={`group relative flex h-12 w-12 items-center justify-center rounded-2xl border transition ${
+    className={`group relative flex h-11 w-11 items-center justify-center rounded-xl border transition ${
       active
         ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
         : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
@@ -102,7 +102,7 @@ const MobileNavButton = ({ active, icon: Icon, label, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium transition ${
+    className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
       active
         ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
         : 'text-slate-500 dark:text-slate-400'
@@ -114,7 +114,7 @@ const MobileNavButton = ({ active, icon: Icon, label, onClick }) => (
 );
 
 const SettingRow = ({ label, hint, action }) => (
-  <div className="flex items-center justify-between gap-4 rounded-3xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
     <div>
       <p className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
       {hint && <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
@@ -530,7 +530,7 @@ const Dashboard = () => {
         key={conversation.id}
         type="button"
         onClick={() => openConversation(conversation.id)}
-        className={`group flex w-full items-center gap-3 rounded-[28px] border px-3 py-3 text-left transition ${
+        className={`group flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
           isActive
             ? 'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900/80'
             : 'border-transparent bg-white/55 hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60'
@@ -569,7 +569,7 @@ const Dashboard = () => {
   const renderContactItem = (contact, showAdd = false) => (
     <div
       key={contact.id}
-      className="flex items-center justify-between gap-3 rounded-[28px] border border-transparent bg-white/55 px-3 py-3 shadow-sm shadow-slate-950/5 transition hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60"
+      className="flex items-center justify-between gap-3 rounded-2xl border border-transparent bg-white/55 px-3 py-3 shadow-sm shadow-slate-950/5 transition hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60"
     >
       <div className="flex min-w-0 items-center gap-3">
         <Avatar name={contact.username} online={contact.onlineStatus} tone="emerald" />
@@ -600,7 +600,7 @@ const Dashboard = () => {
 
   const renderChatsPane = () => (
     <>
-      <div className="glass-panel flex items-center justify-between rounded-[32px] px-4 py-4">
+      <div className="glass-panel flex items-center justify-between px-4 py-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
             {getGreeting()}
@@ -612,21 +612,21 @@ const Dashboard = () => {
         <button
           type="button"
           onClick={() => setShowGroupModal(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-500/30 transition hover:scale-[1.03]"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-500/30 transition hover:scale-[1.03]"
           title="New chat or group"
         >
           <CirclePlus className="h-5 w-5" />
         </button>
       </div>
 
-      <div className="glass-panel mt-4 rounded-[32px] p-3">
+      <div className="glass-panel mt-4 p-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Search messages, people, or groups"
-            className="w-full rounded-[22px] border border-transparent bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+            className="w-full rounded-xl border border-transparent bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
           />
         </div>
 
@@ -655,7 +655,7 @@ const Dashboard = () => {
         <div className="space-y-2.5">
           {filteredConversations.map(renderConversationItem)}
           {filteredConversations.length === 0 && (
-            <div className="glass-panel rounded-[32px] px-5 py-8 text-center">
+            <div className="glass-panel px-5 py-8 text-center">
               <p className="text-sm font-semibold text-slate-900 dark:text-white">No conversations yet</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Start a direct chat or open a new group to begin.
@@ -669,7 +669,7 @@ const Dashboard = () => {
 
   const renderContactsPane = () => (
     <>
-      <div className="glass-panel rounded-[32px] px-4 py-4">
+      <div className="glass-panel px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
           Contacts
         </p>
@@ -680,7 +680,7 @@ const Dashboard = () => {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Search by name or email"
-            className="w-full rounded-[22px] border border-transparent bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+            className="w-full rounded-xl border border-transparent bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
           />
         </div>
       </div>
@@ -688,7 +688,7 @@ const Dashboard = () => {
       <div className="mt-4 flex-1 overflow-y-auto pr-1">
         <div className="space-y-3">
           {isSearchingContact && (
-            <div className="glass-panel rounded-[28px] px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+            <div className="glass-panel px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
               Searching contacts...
             </div>
           )}
@@ -704,7 +704,7 @@ const Dashboard = () => {
           {(deferredSearch ? savedContactResults : filteredContacts).map((contact) => renderContactItem(contact))}
 
           {!deferredSearch && filteredContacts.length === 0 && (
-            <div className="glass-panel rounded-[32px] px-5 py-8 text-center">
+            <div className="glass-panel px-5 py-8 text-center">
               <p className="text-sm font-semibold text-slate-900 dark:text-white">No contacts yet</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Search by exact email to add someone to your list.
@@ -717,7 +717,7 @@ const Dashboard = () => {
             savedContactResults.length === 0 &&
             !unknownUserResult &&
             !contactSearchError && (
-              <div className="glass-panel rounded-[32px] px-5 py-8 text-center">
+              <div className="glass-panel px-5 py-8 text-center">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">No matching contacts</p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Try an exact email address if you want to add someone new.
@@ -731,7 +731,7 @@ const Dashboard = () => {
 
   const renderCallsPane = () => (
     <>
-      <div className="glass-panel rounded-[32px] px-4 py-4">
+      <div className="glass-panel px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
           Calls
         </p>
@@ -746,10 +746,10 @@ const Dashboard = () => {
         ].map((card) => (
           <div
             key={card.title}
-            className="glass-panel rounded-[30px] bg-gradient-to-br from-white/85 to-sky-50/85 px-5 py-5 dark:from-slate-900/70 dark:to-slate-900/40"
+            className="glass-panel bg-gradient-to-br from-white/85 to-sky-50/85 px-5 py-5 dark:from-slate-900/70 dark:to-slate-900/40"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
                 <Phone className="h-5 w-5" />
               </div>
               <div>
@@ -765,14 +765,14 @@ const Dashboard = () => {
 
   const renderSettingsContent = () => (
     <form onSubmit={handleSaveProfile} className="space-y-4">
-      <div className="glass-panel rounded-[32px] px-4 py-4">
+      <div className="glass-panel px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
           Settings
         </p>
         <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Profile and appearance</h2>
       </div>
 
-      <div className="glass-panel rounded-[32px] p-4">
+      <div className="glass-panel p-4">
         <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
           Username
         </label>
@@ -780,7 +780,7 @@ const Dashboard = () => {
           type="text"
           value={editUsername}
           onChange={(event) => setEditUsername(event.target.value)}
-          className="w-full rounded-[22px] border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+          className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
         />
       </div>
 
@@ -856,7 +856,7 @@ const Dashboard = () => {
 
       <aside className="relative z-20 hidden w-24 shrink-0 flex-col items-center justify-between overflow-visible border-r border-white/50 px-4 py-6 backdrop-blur-xl dark:border-white/10 md:flex">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-[24px] bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-900">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-900">
             <Sparkles className="h-6 w-6" />
           </div>
           {desktopSections.map((section) => (
@@ -893,7 +893,7 @@ const Dashboard = () => {
               setEditUsername(userInfo.username);
               setShowSettingsModal(true);
             }}
-            className="group flex h-14 w-14 items-center justify-center rounded-[24px] bg-white/80 text-slate-900 shadow-lg shadow-slate-950/5 transition hover:bg-white dark:bg-slate-900/70 dark:text-white"
+            className="group flex h-12 w-12 items-center justify-center rounded-xl bg-white/80 text-slate-900 shadow-lg shadow-slate-950/5 transition hover:bg-white dark:bg-slate-900/70 dark:text-white"
           >
             <span className="text-base font-semibold uppercase">{userInfo.username?.slice(0, 1)}</span>
           </button>
@@ -930,7 +930,7 @@ const Dashboard = () => {
 
       {!showMobileChat && (
         <div className="absolute inset-x-4 bottom-4 z-20 md:hidden">
-          <div className="glass-panel flex items-center gap-2 rounded-[28px] p-2">
+          <div className="glass-panel flex items-center gap-2 p-2">
             {mobileSections.map((section) => (
               <MobileNavButton
                 key={section.id}
@@ -958,7 +958,7 @@ const Dashboard = () => {
 
       {showSettingsModal && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.8))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
+          <div className="w-full max-w-lg rounded-2xl border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.8))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
@@ -969,7 +969,7 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={() => setShowSettingsModal(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -981,7 +981,7 @@ const Dashboard = () => {
 
       {showGroupModal && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.82))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.82))]">
+          <div className="w-full max-w-xl rounded-2xl border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.82))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.82))]">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
@@ -992,7 +992,7 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={() => setShowGroupModal(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1009,7 +1009,7 @@ const Dashboard = () => {
                   value={newRoomName}
                   onChange={(event) => setNewRoomName(event.target.value)}
                   placeholder="Leave blank and select one person for a direct chat"
-                  className="w-full rounded-[22px] border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+                  className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
                 />
               </div>
 
@@ -1017,7 +1017,7 @@ const Dashboard = () => {
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                   Members
                 </label>
-                <div className="max-h-72 space-y-2 overflow-y-auto rounded-[28px] border border-white/60 bg-white/60 p-2 dark:border-white/10 dark:bg-slate-900/50">
+                <div className="max-h-72 space-y-2 overflow-y-auto rounded-2xl border border-white/60 bg-white/60 p-2 dark:border-white/10 dark:bg-slate-900/50">
                   {usersForModal
                     .filter((user) => user.id !== userInfo.id)
                     .map((user) => {
@@ -1025,7 +1025,7 @@ const Dashboard = () => {
                       return (
                         <label
                           key={user.id}
-                          className={`flex cursor-pointer items-center gap-3 rounded-[24px] px-3 py-3 transition ${
+                          className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition ${
                             selected
                               ? 'bg-sky-500/10 ring-1 ring-sky-500/20'
                               : 'bg-transparent hover:bg-white/70 dark:hover:bg-slate-900/60'
@@ -1060,13 +1060,13 @@ const Dashboard = () => {
                 <button
                   type="button"
                   onClick={() => setShowGroupModal(false)}
-                  className="flex-1 rounded-[20px] bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white dark:bg-slate-900/70 dark:text-slate-200"
+                  className="flex-1 rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white dark:bg-slate-900/70 dark:text-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                  className="flex-1 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
                 >
                   Continue
                 </button>

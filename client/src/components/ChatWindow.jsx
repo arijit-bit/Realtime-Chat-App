@@ -437,20 +437,20 @@ const ChatWindow = ({
 
   return (
     <div className="relative flex h-full flex-col px-3 py-3 md:px-4 md:py-4">
-      <div className="glass-panel relative flex h-full flex-col overflow-hidden rounded-[36px]">
-        <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-white/60 bg-white/55 px-4 py-4 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/45 md:px-6">
-          <div className="flex min-w-0 items-center gap-3">
+      <div className="glass-panel relative flex h-full flex-col overflow-hidden">
+        <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/60 bg-white/55 px-4 py-3 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/45 md:px-5">
+          <div className="flex min-w-0 items-center gap-2.5">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80 text-slate-500 shadow-sm transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white md:hidden"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 shadow-sm transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white md:hidden"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
             <div className="relative shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-500 text-sm font-semibold uppercase text-white shadow-lg shadow-slate-950/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 text-sm font-semibold uppercase text-white shadow-lg shadow-slate-950/10">
                 {(roomName || roomId).slice(0, 1)}
               </div>
               {!isGroupChat && (
@@ -462,8 +462,8 @@ const ChatWindow = ({
               )}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-slate-900 dark:text-white">{roomName || roomId}</p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+              <p className="truncate text-[15px] font-semibold text-slate-900 dark:text-white">{roomName || roomId}</p>
+              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
                 {isGroupChat ? 'Group conversation' : conversationMeta?.onlineStatus ? 'Online now' : 'Direct conversation'}
               </p>
             </div>
@@ -474,7 +474,7 @@ const ChatWindow = ({
               <button
                 type="button"
                 onClick={fetchAvailableUsers}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
                 title="Add members"
               >
                 <UserPlus className="h-4 w-4" />
@@ -482,14 +482,14 @@ const ChatWindow = ({
             )}
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
               title="Voice call"
             >
               <Phone className="h-4 w-4" />
             </button>
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
               title="Video call"
             >
               <Video className="h-4 w-4" />
@@ -498,7 +498,7 @@ const ChatWindow = ({
               <button
                 type="button"
                 onClick={handleDeleteRoom}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-slate-500 shadow-sm transition hover:text-red-500 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-red-300"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 shadow-sm transition hover:text-red-500 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-red-300"
                 title="Delete conversation"
               >
                 <Trash2 className="h-4 w-4" />
@@ -508,7 +508,7 @@ const ChatWindow = ({
         </div>
 
         {showAddToBanner && (
-          <div className="mx-4 mt-4 rounded-[26px] border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-800 shadow-sm shadow-amber-950/5 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200 md:mx-6">
+          <div className="mx-4 mt-4 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-800 shadow-sm shadow-amber-950/5 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200 md:mx-6">
             <div className="flex items-center justify-between gap-3">
               <p>
                 <span className="font-semibold">{senderInfo.username}</span> is not in your contacts yet.
@@ -526,13 +526,13 @@ const ChatWindow = ({
         )}
 
         {contactAdded && !isGroupChat && (
-          <div className="mx-4 mt-4 rounded-[26px] border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-700 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200 md:mx-6">
+          <div className="mx-4 mt-4 rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-700 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200 md:mx-6">
             Added to your contacts.
           </div>
         )}
 
         {isOffline && (
-          <div className="mx-4 mt-4 rounded-[26px] border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-700 shadow-sm shadow-red-950/5 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200 md:mx-6">
+          <div className="mx-4 mt-4 rounded-xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-700 shadow-sm shadow-red-950/5 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200 md:mx-6">
             You are offline. Cached messages are still available.
           </div>
         )}
@@ -540,7 +540,7 @@ const ChatWindow = ({
         <div className="relative flex-1">
           {isInitialLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/72 backdrop-blur-2xl dark:bg-slate-950/72">
-              <div className="flex h-16 w-16 items-center justify-center rounded-[28px] bg-white/85 shadow-lg shadow-slate-950/10 dark:bg-slate-900/85">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 shadow-lg shadow-slate-950/10 dark:bg-slate-900/85">
                 <div className="h-8 w-8 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
               </div>
               <div className="space-y-2 text-center">
@@ -585,7 +585,7 @@ const ChatWindow = ({
                   </div>
                 )}
 
-                <div className={`flex ${message.own ? 'justify-end' : 'justify-start'} ${message.groupedStart ? 'mt-3' : 'mt-1'}`}>
+                <div className={`flex ${message.own ? 'justify-end' : 'justify-start'} ${message.groupedStart ? 'mt-3' : 'mt-1.5'}`}>
                   <div className={`max-w-[85%] sm:max-w-[72%] ${message.own ? 'items-end' : 'items-start'} flex flex-col`}>
                     {message.showName && (
                       <span className="mb-1.5 pl-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
@@ -596,16 +596,16 @@ const ChatWindow = ({
                     <div
                       className={`relative transition ${message._animate ? 'message-pop' : ''} ${
                         message.own
-                          ? 'rounded-[18px] bg-[#0b8f72] text-white shadow-sm'
-                          : 'rounded-[18px] border border-white/70 bg-white text-slate-900 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:text-slate-100'
+                          ? 'rounded-xl bg-[#0b8f72] text-white shadow-sm'
+                          : 'rounded-xl border border-white/70 bg-white text-slate-900 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:text-slate-100'
                       } ${
                         message.groupedStart
                           ? message.own
                             ? 'rounded-br-md'
                             : 'rounded-bl-md'
                         : message.own
-                            ? 'rounded-br-[18px]'
-                            : 'rounded-bl-[18px]'
+                            ? 'rounded-br-xl'
+                            : 'rounded-bl-xl'
                       } max-w-full px-4 py-2.5`}
                     >
                       <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
@@ -625,7 +625,7 @@ const ChatWindow = ({
 
             {typingUsers.length > 0 && (
               <div className="mt-3 flex justify-start">
-                <div className="rounded-[20px] rounded-bl-md border border-white/70 bg-white px-4 py-3 text-sm text-slate-600 shadow-lg shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
+                <div className="rounded-xl rounded-bl-md border border-white/70 bg-white px-4 py-3 text-sm text-slate-600 shadow-lg shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
                   <div className="flex items-center gap-2">
                     <span>{typingUsers.join(', ')} typing</span>
                     <div className="flex items-center gap-1">
@@ -643,14 +643,14 @@ const ChatWindow = ({
           </div>
         </div>
 
-        <div className="border-t border-white/60 bg-white/35 px-4 py-4 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/30 md:px-6">
+        <div className="border-t border-white/60 bg-white/35 px-4 py-3 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/30 md:px-5">
           <form
             onSubmit={handleSend}
-            className="glass-panel flex items-center gap-3 rounded-[28px] px-3 py-2"
+            className="glass-panel flex items-center gap-3 px-3 py-2"
           >
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 shadow-sm transition hover:text-sky-600 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-sky-300"
               title="Attach media"
             >
               <ImagePlus className="h-4 w-4" />
@@ -667,7 +667,7 @@ const ChatWindow = ({
             <button
               type="submit"
               disabled={!currentMessage.trim()}
-              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:disabled:bg-slate-700 dark:disabled:text-slate-500"
+              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:disabled:bg-slate-700 dark:disabled:text-slate-500"
             >
               Send
             </button>
@@ -676,7 +676,7 @@ const ChatWindow = ({
 
         {showInviteModal && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-sm rounded-[32px] border border-white/60 bg-white/90 p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-slate-950/90">
+            <div className="w-full max-w-sm rounded-2xl border border-white/60 bg-white/90 p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-slate-950/90">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
@@ -687,7 +687,7 @@ const ChatWindow = ({
                 <button
                   type="button"
                   onClick={() => setShowInviteModal(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
@@ -695,14 +695,14 @@ const ChatWindow = ({
 
               <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                 {usersToInvite.length === 0 ? (
-                  <div className="rounded-[24px] bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                  <div className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                     Everyone is already in this group.
                   </div>
                 ) : (
                   usersToInvite.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between gap-3 rounded-[24px] bg-slate-50 px-3 py-3 dark:bg-slate-900"
+                      className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">

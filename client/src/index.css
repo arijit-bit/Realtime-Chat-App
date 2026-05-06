@@ -18,7 +18,7 @@
 
 @layer components {
   .glass-panel {
-    @apply border border-white/60 shadow-xl shadow-slate-950/5 backdrop-blur-2xl dark:border-white/10;
+    @apply rounded-2xl border border-white/60 shadow-xl shadow-slate-950/5 backdrop-blur-2xl dark:border-white/10;
     background: rgba(255, 255, 255, 0.55);
   }
 
