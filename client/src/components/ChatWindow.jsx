@@ -58,6 +58,9 @@ const ChatWindow = ({
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(() => !Boolean(localStorage.getItem(`chat_history_${roomId}`)));
+  const [hasResolvedInitialLoad, setHasResolvedInitialLoad] = useState(() =>
+    Boolean(localStorage.getItem(`chat_history_${roomId}`)),
+  );
   const [isOffline, setIsOffline] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [usersToInvite, setUsersToInvite] = useState([]);
@@ -83,20 +86,28 @@ const ChatWindow = ({
     setHasMore(false);
     setIsOffline(false);
     setIsLoadingMore(false);
+    setTypingUsers([]);
 
     const cached = localStorage.getItem(`chat_history_${roomId}`);
+    const hasCachedHistory = Boolean(cached);
+    setIsInitialLoading(!hasCachedHistory);
+    setHasResolvedInitialLoad(hasCachedHistory);
+
     if (cached) {
       try {
         setMessages(JSON.parse(cached));
         setIsInitialLoading(false);
+        setHasResolvedInitialLoad(true);
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
       } catch (error) {
         console.error('Failed to parse cached messages', error);
+        setMessages([]);
         setIsInitialLoading(true);
+        setHasResolvedInitialLoad(false);
       }
     } else {
-      setMessages([]);
       setIsInitialLoading(true);
+      setHasResolvedInitialLoad(false);
     }
 
     const fetchHistory = async () => {
@@ -129,6 +140,7 @@ const ChatWindow = ({
         setIsOffline(true);
       } finally {
         setIsInitialLoading(false);
+        setHasResolvedInitialLoad(true);
       }
     };
 
@@ -550,7 +562,7 @@ const ChatWindow = ({
             </div>
           )}
 
-          {messageRows.length === 0 && !isLoadingMore && !isInitialLoading && (
+          {messageRows.length === 0 && !isLoadingMore && !isInitialLoading && hasResolvedInitialLoad && (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-white/80 shadow-lg shadow-slate-950/5 dark:bg-slate-900/70">
                 <MoreHorizontal className="h-8 w-8 text-slate-400" />
