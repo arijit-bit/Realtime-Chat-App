@@ -1,728 +1,1079 @@
-import React, { useEffect, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import {
+  Bell,
+  CirclePlus,
+  ContactRound,
+  MessageSquare,
+  Moon,
+  Phone,
+  Search,
+  Settings,
+  Sparkles,
+  SunMedium,
+  Users,
+  X,
+} from 'lucide-react';
 import ChatWindow from '../components/ChatWindow';
 import { API_URL } from '../config';
 
-// ── Icons ──────────────────────────────────────────────────────────────────
-const SearchIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-);
-const MoreIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-    </svg>
-);
-const PlusIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-    </svg>
-);
+const desktopSections = [
+  { id: 'chats', label: 'Chats', icon: MessageSquare },
+  { id: 'contacts', label: 'Contacts', icon: ContactRound },
+  { id: 'calls', label: 'Calls', icon: Phone },
+];
 
-let currentNightNote = null;
+const mobileSections = [
+  { id: 'chats', label: 'Chats', icon: MessageSquare },
+  { id: 'calls', label: 'Calls', icon: Phone },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
 
 const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'Good Morning!';
-    if (hour >= 12 && hour < 17) return 'Good Afternoon!';
-    if (hour >= 17 && hour < 22) return 'Good Evening!';
-    
-    // 10 PM to 5 AM (Night owl mode)
-    if (!currentNightNote) {
-        const nightNotes = [
-            "Up late, huh? 🌙",
-            "Burning the midnight oil? 🕯️",
-            "Night owl mode activated 🦉",
-            "Still awake? 🌌",
-            "Quiet hours 🌙",
-            "Late night chats? 🤫"
-        ];
-        currentNightNote = nightNotes[Math.floor(Math.random() * nightNotes.length)];
-    }
-    return currentNightNote;
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
 };
 
+const formatConversationTime = (value) => {
+  if (!value) return '';
+
+  const date = new Date(value);
+  const now = new Date();
+  const isSameDay = date.toDateString() === now.toDateString();
+
+  if (isSameDay) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
+  const classes =
+    tone === 'emerald'
+      ? 'from-emerald-500 to-teal-500'
+      : tone === 'sky'
+        ? 'from-sky-500 to-cyan-500'
+        : 'from-slate-500 to-slate-700';
+
+  return (
+    <div className="relative shrink-0">
+      <div
+        className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${classes} text-sm font-semibold uppercase text-white shadow-lg shadow-slate-950/10`}
+      >
+        {isGroup ? <Users className="h-5 w-5" /> : (name || '?').slice(0, 1)}
+      </div>
+      {!isGroup && (
+        <span
+          className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-950 ${
+            online ? 'bg-emerald-400' : 'bg-slate-300 dark:bg-slate-600'
+          }`}
+        />
+      )}
+    </div>
+  );
+};
+
+const DesktopNavButton = ({ active, icon: Icon, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={label}
+    className={`group relative flex h-12 w-12 items-center justify-center rounded-2xl transition ${
+      active
+        ? 'bg-white text-sky-600 shadow-lg shadow-sky-500/20 dark:bg-slate-800 dark:text-sky-300'
+        : 'text-slate-500 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-white'
+    }`}
+  >
+    <Icon className="h-5 w-5" />
+    <span className="pointer-events-none absolute left-full ml-3 hidden rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900 xl:hidden">
+      {label}
+    </span>
+  </button>
+);
+
+const MobileNavButton = ({ active, icon: Icon, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium transition ${
+      active
+        ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
+        : 'text-slate-500 dark:text-slate-400'
+    }`}
+  >
+    <Icon className="h-5 w-5" />
+    <span>{label}</span>
+  </button>
+);
+
+const SettingRow = ({ label, hint, action }) => (
+  <div className="flex items-center justify-between gap-4 rounded-3xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+    <div>
+      <p className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
+      {hint && <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
+    </div>
+    {action}
+  </div>
+);
+
 const Dashboard = () => {
-    const navigate = useNavigate();
-    const [userInfo, setUserInfo] = useState(null);
-    const [socket, setSocket] = useState(null);
-    const [isDarkMode, setIsDarkMode] = useState(false);
+  const navigate = useNavigate();
+  const [userInfo, setUserInfo] = useState(null);
+  const [socket, setSocket] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeSection, setActiveSection] = useState('chats');
+  const [mobileSection, setMobileSection] = useState('chats');
+  const [conversationFilter, setConversationFilter] = useState('direct');
+  const [activeRoom, setActiveRoom] = useState('Global Lounge');
+  const [conversations, setConversations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [contacts, setContacts] = useState([]);
+  const [savedContactResults, setSavedContactResults] = useState([]);
+  const [unknownUserResult, setUnknownUserResult] = useState(null);
+  const [contactSearchError, setContactSearchError] = useState('');
+  const [isSearchingContact, setIsSearchingContact] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [usersForModal, setUsersForModal] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
 
-    // Tabs: 'chats' | 'groups' | 'contacts'
-    const [activeTab, setActiveTab] = useState('chats');
+  const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
-    const [activeRoom, setActiveRoom] = useState('Global Lounge');
-    const [conversations, setConversations] = useState([]);
+  useEffect(() => {
+    const totalUnread = conversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
+    document.title = totalUnread > 0 ? `(${totalUnread}) NeoChat` : 'NeoChat';
+  }, [conversations]);
 
-    // Search
-    const [searchTerm, setSearchTerm] = useState('');
-    const [showSearch, setShowSearch] = useState(false);
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
 
-    // Contacts tab state — stored in DB, NOT localStorage
-    const [contacts, setContacts] = useState([]);
-    const [contactEmailInput, setContactEmailInput] = useState('');
-    // savedContactResults: contacts from user's list that match the search
-    const [savedContactResults, setSavedContactResults] = useState([]);
-    // unknownUserResult: an exact-email match that is NOT in the user's contacts yet
-    const [unknownUserResult, setUnknownUserResult] = useState(null);
-    const [contactSearchError, setContactSearchError] = useState('');
-    const [isSearchingContact, setIsSearchingContact] = useState(false);
-
-    // Group creation modal
-    const [showGroupModal, setShowGroupModal] = useState(false);
-    const [newRoomName, setNewRoomName] = useState('');
-    const [usersForModal, setUsersForModal] = useState([]);
-    const [selectedUsers, setSelectedUsers] = useState([]);
-
-    // Settings modal
-    const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [showMoreMenu, setShowMoreMenu] = useState(false);
-    const [editUsername, setEditUsername] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const [showMobileChat, setShowMobileChat] = useState(false);
-
-    useEffect(() => {
-        const totalUnread = conversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
-        document.title = totalUnread > 0 ? `(${totalUnread}) NeoChat` : 'NeoChat';
-    }, [conversations]);
-
-    useEffect(() => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            setIsDarkMode(true);
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, []);
-
-    const toggleTheme = () => {
-        setIsDarkMode(prev => {
-            const next = !prev;
-            if (next) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
-            else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
-            return next;
-        });
-    };
-
-    useEffect(() => {
-        const storedUser = localStorage.getItem('userInfo');
-        if (!storedUser) { navigate('/login'); return; }
-
-        const parsedUser = JSON.parse(storedUser);
-        setUserInfo(parsedUser);
-
-        // Immediately load cache if available
-        const cachedConversations = localStorage.getItem(`conversations_${parsedUser.id}`);
-        if (cachedConversations) {
-            try { setConversations(JSON.parse(cachedConversations)); } catch(e){}
-        }
-        const cachedContacts = localStorage.getItem(`contacts_${parsedUser.id}`);
-        if (cachedContacts) {
-            try { setContacts(JSON.parse(cachedContacts)); } catch(e){}
-        }
-        const cachedUsersForModal = localStorage.getItem('users_for_modal');
-        if (cachedUsersForModal) {
-            try { setUsersForModal(JSON.parse(cachedUsersForModal)); } catch(e){}
-        }
-
-        const newSocket = io(API_URL, { query: { userId: parsedUser.id } });
-        setSocket(newSocket);
-
-        newSocket.on('user_status_changed', (data) => {
-            setConversations(prev => prev.map(c =>
-                c.targetUserId === data.userId ? { ...c, onlineStatus: data.status === 'online' } : c
-            ));
-        });
-
-        newSocket.on('receive_message', (data) => {
-            setConversations(prev => {
-                let updated = [...prev];
-                const idx = updated.findIndex(c => c.id === data.roomId);
-                if (idx > -1) {
-                    // Known room — update last message + unread count
-                    const c = updated[idx];
-                    updated[idx] = { ...c, lastMessage: data.content, unreadCount: c.id !== activeRoom ? c.unreadCount + 1 : c.unreadCount };
-                    const item = updated.splice(idx, 1)[0];
-                    updated.unshift(item);
-                } else {
-                    // Unknown room (first message in a new DM) — refetch sidebar
-                    fetchConversations(parsedUser.id);
-                }
-                return updated;
-            });
-        });
-
-        // Fired by the server to the recipient when a new conversation starts
-        // (e.g. someone messages you for the first time, or a group message arrives
-        // before you've joined that socket room)
-        newSocket.on('new_conversation', () => {
-            fetchConversations(parsedUser.id);
-        });
-
-        fetchConversations(parsedUser.id);
-        fetchUsersForModal();
-        fetchUserContacts(parsedUser.id);
-
-        return () => newSocket.disconnect();
-    }, [navigate, activeRoom]);
-
-    const fetchConversations = async (userId) => {
-        try {
-            const res = await fetch(`${API_URL}/api/conversations?userId=${userId}`);
-            const data = await res.json();
-            setConversations(data);
-            localStorage.setItem(`conversations_${userId}`, JSON.stringify(data));
-        } catch (err) { console.error(err); }
-    };
-
-    const fetchUsersForModal = async () => {
-        try {
-            const res = await fetch(`${API_URL}/api/users`);
-            const data = await res.json();
-            setUsersForModal(data);
-            localStorage.setItem('users_for_modal', JSON.stringify(data));
-        } catch (err) { console.error(err); }
-    };
-
-    const fetchUserContacts = async (userId) => {
-        try {
-            const res = await fetch(`${API_URL}/api/users/${userId}/contacts`);
-            const data = await res.json();
-            if (Array.isArray(data)) {
-                setContacts(data);
-                localStorage.setItem(`contacts_${userId}`, JSON.stringify(data));
-            }
-        } catch (err) { console.error('Error fetching contacts:', err); }
-    };
-
-    // Keep localStorage updated when sockets mutate state
-    useEffect(() => {
-        if (userInfo && conversations.length > 0) {
-            localStorage.setItem(`conversations_${userInfo.id}`, JSON.stringify(conversations));
-        }
-    }, [conversations, userInfo]);
-
-    useEffect(() => {
-        if (userInfo && contacts.length > 0) {
-            localStorage.setItem(`contacts_${userInfo.id}`, JSON.stringify(contacts));
-        }
-    }, [contacts, userInfo]);
-
-    useEffect(() => {
-        if (activeTab === 'contacts' && searchTerm.trim().length > 0 && userInfo) {
-            const delayDebounceFn = setTimeout(async () => {
-                setIsSearchingContact(true);
-                setSavedContactResults([]);
-                setUnknownUserResult(null);
-                setContactSearchError('');
-                try {
-                    const res = await fetch(
-                        `${API_URL}/api/users/search?q=${encodeURIComponent(searchTerm.trim())}&currentUserId=${userInfo.id}`
-                    );
-                    const data = await res.json();
-                    if (res.ok) {
-                        setSavedContactResults(data.savedContacts || []);
-                        setUnknownUserResult(data.unknownUser || null);
-                    } else {
-                        setContactSearchError(data.message || 'Search failed');
-                    }
-                } catch {
-                    setContactSearchError('Network error. Check your connection.');
-                } finally {
-                    setIsSearchingContact(false);
-                }
-            }, 500);
-            return () => clearTimeout(delayDebounceFn);
-        } else {
-            setSavedContactResults([]);
-            setUnknownUserResult(null);
-            setContactSearchError('');
-        }
-    }, [searchTerm, activeTab, userInfo]);
-
-    const handleAddContact = async (user) => {
-        if (!userInfo) return;
-        try {
-            const res = await fetch(`${API_URL}/api/users/${userInfo.id}/contacts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contactEmail: user.email })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                // Add to local contacts list
-                setContacts(prev => [...prev, data.contact]);
-                setUnknownUserResult(null);
-                setSearchTerm('');
-            } else {
-                alert(data.message || 'Failed to add contact');
-            }
-        } catch {
-            alert('Network error. Could not add contact.');
-        }
-    };
-
-    const handleOpenDirectChat = (contactUser) => {
-        const p1 = userInfo.id;
-        const p2 = contactUser.id;
-        const roomName = p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
-        setActiveRoom(roomName);
-        setActiveTab('chats');
-        setShowMobileChat(true);
-    };
-
-    // ── Group creation ──────────────────────────────────────────────────────
-    const handleCreateGroup = async (e) => {
-        e.preventDefault();
-        if ((!newRoomName || newRoomName.trim() === '') && selectedUsers.length === 1) {
-            const targetUserId = selectedUsers[0];
-            const p1 = userInfo.id, p2 = targetUserId;
-            const oneOnOneRoomName = p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
-            setShowGroupModal(false); setSelectedUsers([]); setActiveRoom(oneOnOneRoomName); setShowMobileChat(true); return;
-        }
-        if (!newRoomName || newRoomName.trim() === '') {
-            alert('Provide a group name or select exactly ONE user.'); return;
-        }
-        try {
-            const res = await fetch(`${API_URL}/api/rooms/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ roomName: newRoomName.trim(), members: [...selectedUsers, userInfo.id] })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setShowGroupModal(false); setNewRoomName(''); setSelectedUsers([]);
-                await fetchConversations(userInfo.id);
-                setActiveRoom(data.roomName);
-                setActiveTab('groups');
-                setShowMobileChat(true);
-            } else { alert(data.message || 'Error creating room'); }
-        } catch (err) { console.error(err); }
-    };
-
-    // ── Settings ────────────────────────────────────────────────────────────
-    const openSettings = () => { setEditUsername(userInfo.username); setShowSettingsModal(true); setShowMoreMenu(false); };
-
-    const handleSaveProfile = async (e) => {
-        e.preventDefault();
-        if (!editUsername.trim()) return;
-        setIsSaving(true);
-        try {
-            const res = await fetch(`${API_URL}/api/users/${userInfo.id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: editUsername.trim() })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                const updatedUser = { ...userInfo, username: data.username };
-                setUserInfo(updatedUser);
-                localStorage.setItem('userInfo', JSON.stringify(updatedUser));
-                setShowSettingsModal(false);
-            } else { alert(data.message || 'Error updating profile'); }
-        } catch { alert('Failed to connect to server.'); }
-        finally { setIsSaving(false); }
-    };
-
-    if (!userInfo || !socket) {
-        return <div className="flex items-center justify-center h-screen text-slate-400">Connecting...</div>;
+  useEffect(() => {
+    const storedUser = localStorage.getItem('userInfo');
+    if (!storedUser) {
+      navigate('/login');
+      return;
     }
 
-    // Partition conversations
-    const directChats = conversations.filter(c => !c.isGroup);
-    const groupRooms = conversations.filter(c => c.isGroup);
+    const parsedUser = JSON.parse(storedUser);
+    setUserInfo(parsedUser);
 
-    const filteredList = (() => {
-        const term = searchTerm.toLowerCase();
-        if (activeTab === 'chats') return directChats.filter(c => c.name.toLowerCase().includes(term));
-        if (activeTab === 'groups') return groupRooms.filter(c => c.name.toLowerCase().includes(term));
-        return [];
-    })();
+    const cachedConversations = localStorage.getItem(`conversations_${parsedUser.id}`);
+    if (cachedConversations) {
+      try {
+        setConversations(JSON.parse(cachedConversations));
+      } catch (error) {
+        console.error(error);
+      }
+    }
 
-    const renderConvItem = (conv) => {
-        const isActive = activeRoom === conv.id;
-        return (
-            <div
-                key={conv.id}
-                onClick={() => { setActiveRoom(conv.id); setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unreadCount: 0 } : c)); setShowMobileChat(true); }}
-                className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all border-l-[3px] ${isActive ? 'bg-blue-50/50 dark:bg-slate-800/80 border-[#0078fe]' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
-            >
-                <div className="relative shrink-0">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm ${conv.isGroup ? 'bg-[#0078fe]' : 'bg-slate-400 dark:bg-slate-600'}`}>
-                        {conv.isGroup ? '#' : conv.name.charAt(0).toUpperCase()}
-                    </div>
-                    {!conv.isGroup && (
-                        <span className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#1e293b] ${conv.onlineStatus ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
-                    )}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between">
-                        <h3 className={`font-semibold truncate text-[15px] ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-800 dark:text-slate-200'}`}>{conv.name}</h3>
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0 ml-2">
-                            {conv.lastMessageTime && new Date(conv.lastMessageTime).getHours() > 0
-                                ? new Date(conv.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                        <p className={`text-[13px] truncate pr-2 text-slate-500 dark:text-slate-400 ${conv.unreadCount > 0 ? 'font-semibold text-slate-700 dark:text-slate-200' : ''}`}>{conv.lastMessage}</p>
-                        {conv.unreadCount > 0 && (
-                            <span className="shrink-0 bg-[#0078fe] text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[11px] font-bold">{conv.unreadCount}</span>
-                        )}
-                    </div>
-                </div>
-            </div>
+    const cachedContacts = localStorage.getItem(`contacts_${parsedUser.id}`);
+    if (cachedContacts) {
+      try {
+        setContacts(JSON.parse(cachedContacts));
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    const cachedUsersForModal = localStorage.getItem('users_for_modal');
+    if (cachedUsersForModal) {
+      try {
+        setUsersForModal(JSON.parse(cachedUsersForModal));
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    const newSocket = io(API_URL, { query: { userId: parsedUser.id } });
+    setSocket(newSocket);
+
+    newSocket.on('user_status_changed', (data) => {
+      setConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.targetUserId === data.userId
+            ? { ...conversation, onlineStatus: data.status === 'online' }
+            : conversation,
+        ),
+      );
+    });
+
+    newSocket.on('receive_message', (data) => {
+      setConversations((prev) => {
+        const updated = [...prev];
+        const index = updated.findIndex((conversation) => conversation.id === data.roomId);
+
+        if (index > -1) {
+          const currentConversation = updated[index];
+          updated[index] = {
+            ...currentConversation,
+            lastMessage: data.content,
+            lastMessageTime: data.timestamp,
+            unreadCount:
+              data.roomId !== activeRoom && data.senderId !== parsedUser.id
+                ? (currentConversation.unreadCount || 0) + 1
+                : 0,
+          };
+          const [moved] = updated.splice(index, 1);
+          updated.unshift(moved);
+          return updated;
+        }
+
+        fetchConversations(parsedUser.id);
+        return prev;
+      });
+    });
+
+    newSocket.on('new_conversation', () => {
+      fetchConversations(parsedUser.id);
+    });
+
+    fetchConversations(parsedUser.id);
+    fetchUsersForModal();
+    fetchUserContacts(parsedUser.id);
+
+    return () => newSocket.disconnect();
+  }, [navigate, activeRoom]);
+
+  useEffect(() => {
+    if (userInfo) {
+      localStorage.setItem(`conversations_${userInfo.id}`, JSON.stringify(conversations));
+    }
+  }, [conversations, userInfo]);
+
+  useEffect(() => {
+    if (userInfo) {
+      localStorage.setItem(`contacts_${userInfo.id}`, JSON.stringify(contacts));
+    }
+  }, [contacts, userInfo]);
+
+  useEffect(() => {
+    const isContactsView = activeSection === 'contacts' || mobileSection === 'contacts';
+    if (!isContactsView || deferredSearch.length === 0 || !userInfo) {
+      setSavedContactResults([]);
+      setUnknownUserResult(null);
+      setContactSearchError('');
+      return undefined;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingContact(true);
+      setSavedContactResults([]);
+      setUnknownUserResult(null);
+      setContactSearchError('');
+      try {
+        const response = await fetch(
+          `${API_URL}/api/users/search?q=${encodeURIComponent(
+            deferredSearch,
+          )}&currentUserId=${userInfo.id}`,
         );
-    };
+        const data = await response.json();
+
+        if (!response.ok) {
+          setContactSearchError(data.message || 'Search failed');
+          return;
+        }
+
+        setSavedContactResults(data.savedContacts || []);
+        setUnknownUserResult(data.unknownUser || null);
+      } catch (error) {
+        console.error(error);
+        setContactSearchError('Network error. Check your connection.');
+      } finally {
+        setIsSearchingContact(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [activeSection, deferredSearch, mobileSection, userInfo]);
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      if (next) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+      return next;
+    });
+  };
+
+  const fetchConversations = async (userId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/conversations?userId=${userId}`);
+      const data = await response.json();
+      setConversations(data);
+      localStorage.setItem(`conversations_${userId}`, JSON.stringify(data));
+
+      if (!activeRoom && data.length > 0) {
+        setActiveRoom(data[0].id);
+        return;
+      }
+
+      if (data.length > 0 && !data.some((conversation) => conversation.id === activeRoom)) {
+        setActiveRoom(data[0].id);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchUsersForModal = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/users`);
+      const data = await response.json();
+      setUsersForModal(data);
+      localStorage.setItem('users_for_modal', JSON.stringify(data));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchUserContacts = async (userId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userId}/contacts`);
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setContacts(data);
+        localStorage.setItem(`contacts_${userId}`, JSON.stringify(data));
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    }
+  };
+
+  const handleAddContact = async (user) => {
+    if (!userInfo) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userInfo.id}/contacts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactEmail: user.email }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || 'Failed to add contact');
+        return;
+      }
+
+      setContacts((prev) => {
+        if (prev.some((contact) => String(contact.id) === String(data.contact.id))) {
+          return prev;
+        }
+        return [...prev, data.contact];
+      });
+      setUnknownUserResult(null);
+      setSearchTerm('');
+    } catch (error) {
+      console.error(error);
+      alert('Network error. Could not add contact.');
+    }
+  };
+
+  const openConversation = (roomId) => {
+    setActiveRoom(roomId);
+    setConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === roomId ? { ...conversation, unreadCount: 0 } : conversation,
+      ),
+    );
+    setShowMobileChat(true);
+    setActiveSection('chats');
+    setMobileSection('chats');
+  };
+
+  const handleOpenDirectChat = (contactUser) => {
+    const first = userInfo.id;
+    const second = contactUser.id;
+    const roomName = first < second ? `${first}_${second}` : `${second}_${first}`;
+    openConversation(roomName);
+  };
+
+  const handleCreateGroup = async (event) => {
+    event.preventDefault();
+
+    if ((!newRoomName || newRoomName.trim() === '') && selectedUsers.length === 1) {
+      const targetUserId = selectedUsers[0];
+      const first = userInfo.id;
+      const second = targetUserId;
+      const roomName = first < second ? `${first}_${second}` : `${second}_${first}`;
+
+      setShowGroupModal(false);
+      setSelectedUsers([]);
+      openConversation(roomName);
+      return;
+    }
+
+    if (!newRoomName || newRoomName.trim() === '') {
+      alert('Provide a group name or select exactly one person.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/rooms/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomName: newRoomName.trim(), members: [...selectedUsers, userInfo.id] }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || 'Error creating room');
+        return;
+      }
+
+      setShowGroupModal(false);
+      setNewRoomName('');
+      setSelectedUsers([]);
+      await fetchConversations(userInfo.id);
+      openConversation(data.roomName);
+      setConversationFilter('groups');
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleSaveProfile = async (event) => {
+    event.preventDefault();
+    if (!editUsername.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userInfo.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: editUsername.trim() }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || 'Error updating profile');
+        return;
+      }
+
+      const updatedUser = { ...userInfo, username: data.username };
+      setUserInfo(updatedUser);
+      localStorage.setItem('userInfo', JSON.stringify(updatedUser));
+      setShowSettingsModal(false);
+    } catch (error) {
+      console.error(error);
+      alert('Failed to connect to server.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('userInfo');
+    socket?.disconnect();
+    navigate('/login');
+  };
+
+  const activeConversation = useMemo(
+    () => conversations.find((conversation) => conversation.id === activeRoom),
+    [activeRoom, conversations],
+  );
+
+  const directChats = useMemo(
+    () => conversations.filter((conversation) => !conversation.isGroup),
+    [conversations],
+  );
+
+  const groupChats = useMemo(
+    () => conversations.filter((conversation) => conversation.isGroup),
+    [conversations],
+  );
+
+  const filteredConversations = useMemo(() => {
+    const list = conversationFilter === 'groups' ? groupChats : directChats;
+    if (!deferredSearch) return list;
+    return list.filter((conversation) => conversation.name.toLowerCase().includes(deferredSearch));
+  }, [conversationFilter, deferredSearch, directChats, groupChats]);
+
+  const filteredContacts = useMemo(() => {
+    if (!deferredSearch) return contacts;
+    return contacts.filter(
+      (contact) =>
+        contact.username.toLowerCase().includes(deferredSearch) ||
+        contact.email.toLowerCase().includes(deferredSearch),
+    );
+  }, [contacts, deferredSearch]);
+
+  const renderConversationItem = (conversation) => {
+    const isActive = activeRoom === conversation.id;
+    const previewTone = conversation.isGroup ? 'sky' : 'emerald';
 
     return (
-        <div className="flex h-[100dvh] bg-white dark:bg-[#0f172a] overflow-hidden font-sans transition-colors duration-300" onClick={() => setShowMoreMenu(false)}>
-
-            {/* ── Sidebar ─────────────────────────────────────────────────── */}
-            <div className={`${showMobileChat ? 'hidden md:flex' : 'flex'} w-full md:w-[320px] lg:w-[360px] shrink-0 border-r border-slate-200 dark:border-slate-800 flex-col bg-white dark:bg-[#1e293b] z-20 transition-colors duration-300 rounded-b-lg`}>
-
-                {/* Header */}
-                <div className="px-4 pt-5 pb-3 bg-indigo-50/80 dark:bg-[#1e2335] rounded-3xl rounded-tl-none">
-                    <div className="flex items-center justify-between mb-4">
-                        {/* Avatar + greeting */}
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-base shrink-0">
-                                {userInfo.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{getGreeting()}</p>
-                                <h2 className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight">{userInfo.username}</h2>
-                            </div>
-                        </div>
-                        {/* Action icons */}
-                        <div className="flex items-center gap-1">
-                            <button onClick={(e) => { e.stopPropagation(); setShowSearch(s => !s); setSearchTerm(''); }} className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Search">
-                                <SearchIcon />
-                            </button>
-                            <div className="relative">
-                                <button onClick={(e) => { e.stopPropagation(); setShowMoreMenu(m => !m); }} className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="More">
-                                    <MoreIcon />
-                                </button>
-                                {showMoreMenu && (
-                                    <div onClick={e => e.stopPropagation()} className="absolute right-0 top-10 w-40 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700/80 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
-                                        <button onClick={openSettings} className="w-full flex items-center gap-2.5 px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                            <span>Edit Profile</span>
-                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
-                                        </button>
-                                        <button onClick={toggleTheme} className="w-full flex items-center gap-2.5 px-4 py-3 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                            <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                                            {isDarkMode ? (
-                                                <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                        <div className="border-t border-slate-100 dark:border-slate-700"></div>
-                                        <button onClick={() => { localStorage.removeItem('userInfo'); socket.disconnect(); navigate('/login'); }} className="w-full flex items-center gap-2.5 px-4 py-3 text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
-                                            <span>Sign Out</span>
-                                            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Tabs */}
-                    <div className="relative flex items-center bg-white/60 dark:bg-slate-900/40 rounded-full p-1 border border-indigo-100/50 dark:border-slate-700/30">
-                        {/* Animated pill background */}
-                        <div 
-                            className="absolute top-1 bottom-1 w-[calc(33.333% - 2.66px)] bg-[#7064ff] rounded-full transition-transform duration-300 ease-out shadow-sm pointer-events-none"
-                            style={{ 
-                                width: 'calc(33.33% - 2.5px)', 
-                                transform: `translateX(${['chats', 'groups', 'contacts'].indexOf(activeTab) * 100}%)` 
-                            }}
-                        ></div>
-                        {['chats', 'groups', 'contacts'].map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => { setActiveTab(tab); setSearchTerm(''); setShowSearch(false); }}
-                                className={`relative z-10 flex-1 py-1.5 text-[13px] font-semibold rounded-full transition-colors capitalize ${activeTab === tab ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Search Bar (slides down) */}
-                {showSearch && (
-                    <div className="px-4 pb-3 bg-indigo-50/80 dark:bg-[#1e2335]">
-                        <div className="relative">
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder={`Search ${activeTab}...`}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-base rounded-lg pl-9 pr-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                            />
-                            <svg className="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                    </div>
-                )}
-
-                {/* Content area sliding container */}
-                <div className="flex-1 overflow-x-hidden relative">
-                    <div 
-                        className="flex h-full w-[300%] transition-transform duration-300 ease-in-out"
-                        style={{ transform: `translateX(-${['chats', 'groups', 'contacts'].indexOf(activeTab) * (100/3)}%)` }}
-                    >
-
-                        {/* ── CHATS Tab ── */}
-                        <div className="w-1/3 h-full overflow-y-auto">
-                            {(() => {
-                                const list = directChats.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-                                return list.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-48 text-slate-400 dark:text-slate-500 gap-2">
-                                        <svg className="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                                        <p className="text-[13px]">No direct chats yet</p>
-                                        <p className="text-[12px] text-slate-300 dark:text-slate-600">Add contacts to start chatting</p>
-                                    </div>
-                                ) : (
-                                    <div className="py-1">{list.map(renderConvItem)}</div>
-                                );
-                            })()}
-                        </div>
-
-                        {/* ── GROUPS Tab ── */}
-                        <div className="w-1/3 h-full overflow-y-auto">
-                            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-                                <button
-                                    onClick={() => setShowGroupModal(true)}
-                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-[13px] font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#0078fe] hover:text-[#0078fe] transition-colors"
-                                >
-                                    <PlusIcon /> New Group
-                                </button>
-                            </div>
-                            {(() => {
-                                const list = groupRooms.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-                                return list.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-40 text-slate-400 dark:text-slate-500 gap-2">
-                                        <svg className="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" /></svg>
-                                        <p className="text-[13px]">No groups yet</p>
-                                    </div>
-                                ) : (
-                                    <div className="py-1">{list.map(renderConvItem)}</div>
-                                );
-                            })()}
-                        </div>
-
-                        {/* ── CONTACTS Tab ── */}
-                        <div className="w-1/3 h-full overflow-y-auto">
-                            <div className="p-4 space-y-4">
-
-                                {/* Search status / error */}
-                                {isSearchingContact && (
-                                    <p className="text-[13px] text-slate-400 dark:text-slate-500 text-center">Searching...</p>
-                                )}
-                                {contactSearchError && (
-                                    <p className="text-[13px] text-red-400 text-center">{contactSearchError}</p>
-                                )}
-
-                                {/* ── Saved contacts matching the search ── */}
-                                {searchTerm.trim().length > 0 && savedContactResults.length > 0 && (
-                                    <div>
-                                        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Contacts</p>
-                                        <div className="space-y-1">
-                                            {savedContactResults.map(contact => (
-                                                <div key={contact.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-[#7064ff] flex items-center justify-center text-white font-bold text-sm shrink-0">{contact.username.charAt(0).toUpperCase()}</div>
-                                                        <div>
-                                                            <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200">{contact.username}</p>
-                                                            <p className="text-[12px] text-slate-400 dark:text-slate-500">{contact.email}</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleOpenDirectChat(contact)}
-                                                        className="p-2 rounded-full text-slate-400 hover:text-[#0078fe] hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors opacity-0 group-hover:opacity-100"
-                                                        title="Message"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* ── Unknown user (exact email, not in contacts) – show Add button ── */}
-                                {unknownUserResult && (
-                                    <div>
-                                        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">New Contact</p>
-                                        <div className="flex items-center justify-between p-3 rounded-lg border border-[#0078fe]/30 bg-blue-50/60 dark:bg-blue-500/10">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white font-bold text-sm">{unknownUserResult.username.charAt(0).toUpperCase()}</div>
-                                                <div>
-                                                    <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200">{unknownUserResult.username}</p>
-                                                    <p className="text-[12px] text-slate-400 dark:text-slate-500">{unknownUserResult.email}</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleAddContact(unknownUserResult)}
-                                                className="px-3 py-1.5 bg-[#0078fe] text-white text-[12px] font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-                                            >
-                                                + Add
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* ── Full contacts list (when no search active) ── */}
-                                {searchTerm.trim().length === 0 && contacts.length > 0 && (
-                                    <div>
-                                        <p className="text-[12px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">My Contacts ({contacts.length})</p>
-                                        <div className="space-y-1">
-                                            {contacts.map(contact => (
-                                                <div key={contact.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white font-bold text-sm shrink-0">{contact.username.charAt(0).toUpperCase()}</div>
-                                                        <div>
-                                                            <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200">{contact.username}</p>
-                                                            <p className="text-[12px] text-slate-400 dark:text-slate-500">{contact.email}</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleOpenDirectChat(contact)}
-                                                        className="p-2 rounded-full text-slate-400 hover:text-[#0078fe] hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors opacity-0 group-hover:opacity-100"
-                                                        title="Message"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Empty state */}
-                                {contacts.length === 0 && searchTerm.trim().length === 0 && (
-                                    <div className="flex flex-col items-center justify-center h-36 text-slate-400 dark:text-slate-500 gap-2">
-                                        <svg className="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                        <p className="text-[13px]">No contacts yet</p>
-                                        <p className="text-[12px] text-center text-slate-300 dark:text-slate-600">Search by name or email to find people</p>
-                                    </div>
-                                )}
-
-                                {/* No results state */}
-                                {searchTerm.trim().length > 0 && !isSearchingContact && savedContactResults.length === 0 && !unknownUserResult && !contactSearchError && (
-                                    <div className="flex flex-col items-center justify-center h-28 text-slate-400 dark:text-slate-500 gap-2">
-                                        <p className="text-[13px]">No contacts found for "{searchTerm}"</p>
-                                        <p className="text-[12px] text-center text-slate-300 dark:text-slate-600">Try their exact email to add as a new contact</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Chat Canvas ──────────────────────────────────────────────── */}
-            <div className={`${showMobileChat ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 relative`}>
-                <ChatWindow
-                    socket={socket}
-                    currentUser={userInfo}
-                    roomId={activeRoom}
-                    roomName={conversations.find(c => c.id === activeRoom)?.name || activeRoom}
-                    isGroupChat={conversations.find(c => c.id === activeRoom)?.isGroup}
-                    targetUserId={conversations.find(c => c.id === activeRoom)?.targetUserId}
-                    contacts={contacts}
-                    onAddContact={handleAddContact}
-                    onBack={() => setShowMobileChat(false)}
-                />
-            </div>
-
-            {/* ── Settings Modal ───────────────────────────────────────────── */}
-            {showSettingsModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-                    <div className="bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 rounded-xl w-full max-w-md shadow-lg p-6">
-                        <div className="flex justify-between items-center mb-5">
-                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Edit Profile</h3>
-                            <button onClick={() => setShowSettingsModal(false)} className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-                        <form onSubmit={handleSaveProfile} className="space-y-4">
-                            <div>
-                                <label className="block text-[12px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Username</label>
-                                <input type="text" value={editUsername} onChange={e => setEditUsername(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg py-3 px-4 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors text-base" />
-                            </div>
-                            <div className="flex items-center justify-between p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-                                <span className="text-[14px] font-semibold text-slate-700 dark:text-slate-200">Dark Mode</span>
-                                <button type="button" onClick={toggleTheme} className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${isDarkMode ? 'bg-[#0078fe]' : 'bg-slate-300'}`}>
-                                    <div className={`w-5 h-5 bg-white rounded-full absolute transition-transform duration-200 ${isDarkMode ? 'translate-x-[26px]' : 'translate-x-0.5'}`}></div>
-                                </button>
-                            </div>
-                            <div className="flex flex-col gap-2 pt-2">
-                                <button type="submit" disabled={isSaving || !editUsername.trim()} className="w-full py-3 rounded-lg text-[15px] font-semibold bg-[#0078fe] text-white hover:bg-blue-700 disabled:opacity-60 transition-colors">
-                                    {isSaving ? 'Saving...' : 'Save Changes'}
-                                </button>
-                                <button type="button" onClick={() => { localStorage.removeItem('userInfo'); socket.disconnect(); navigate('/login'); }} className="w-full py-3 rounded-lg text-[15px] font-semibold border border-slate-200 dark:border-slate-700 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
-                                    Sign Out
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+      <button
+        key={conversation.id}
+        type="button"
+        onClick={() => openConversation(conversation.id)}
+        className={`group flex w-full items-center gap-3 rounded-[28px] border px-3 py-3 text-left transition ${
+          isActive
+            ? 'border-sky-200 bg-white shadow-lg shadow-sky-500/10 dark:border-sky-500/20 dark:bg-slate-900/80'
+            : 'border-transparent bg-white/55 hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60'
+        }`}
+      >
+        <Avatar
+          name={conversation.name}
+          isGroup={conversation.isGroup}
+          online={conversation.onlineStatus}
+          tone={previewTone}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+              {conversation.name}
+            </p>
+            <span className="shrink-0 text-[11px] text-slate-500 dark:text-slate-400">
+              {formatConversationTime(conversation.lastMessageTime)}
+            </span>
+          </div>
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+              {conversation.lastMessage}
+            </p>
+            {conversation.unreadCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[11px] font-semibold text-white">
+                {conversation.unreadCount}
+              </span>
             )}
+          </div>
+        </div>
+      </button>
+    );
+  };
 
-            {/* ── New Group Modal ──────────────────────────────────────────── */}
-            {showGroupModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-                    <div className="bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 rounded-xl w-full max-w-lg shadow-lg p-6">
-                        <div className="flex justify-between items-center mb-5">
-                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">New Group</h3>
-                            <button onClick={() => setShowGroupModal(false)} className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-                        <form onSubmit={handleCreateGroup} className="space-y-4">
-                            <div>
-                                <label className="block text-[12px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Group Name</label>
-                                <input autoFocus type="text" value={newRoomName} onChange={e => setNewRoomName(e.target.value)} placeholder="e.g. Design Team"
-                                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg py-3 px-4 text-slate-800 dark:text-white focus:outline-none focus:border-[#0078fe] transition-colors text-base placeholder:text-slate-400" />
-                            </div>
-                            <div>
-                                <label className="block text-[12px] font-bold text-slate-400 uppercase tracking-wide mb-2">Add Members</label>
-                                <div className="max-h-56 overflow-y-auto space-y-1 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
-                                    {usersForModal.filter(u => u.id !== userInfo.id).map(u => (
-                                        <label key={u.id} className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selectedUsers.includes(u.id) ? 'bg-blue-50 dark:bg-blue-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                            <input type="checkbox" checked={selectedUsers.includes(u.id)} onChange={() => setSelectedUsers(prev => prev.includes(u.id) ? prev.filter(i => i !== u.id) : [...prev, u.id])} className="w-4 h-4 accent-[#0078fe]" />
-                                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-sm">{u.username.charAt(0)}</div>
-                                            <span className="text-[14px] font-semibold text-slate-700 dark:text-slate-200">{u.username}</span>
-                                            {u.onlineStatus && <span className="w-2 h-2 rounded-full bg-emerald-500 ml-auto"></span>}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="flex gap-2 pt-1">
-                                <button type="button" onClick={() => setShowGroupModal(false)} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
-                                <button type="submit" className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold bg-[#0078fe] text-white hover:bg-blue-700 transition-colors">Create</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+  const renderContactItem = (contact, showAdd = false) => (
+    <div
+      key={contact.id}
+      className="flex items-center justify-between gap-3 rounded-[28px] border border-transparent bg-white/55 px-3 py-3 shadow-sm shadow-slate-950/5 transition hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60"
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <Avatar name={contact.username} online={contact.onlineStatus} tone="emerald" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{contact.username}</p>
+          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{contact.email}</p>
+        </div>
+      </div>
+      {showAdd ? (
+        <button
+          type="button"
+          onClick={() => handleAddContact(contact)}
+          className="rounded-full bg-sky-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-600"
+        >
+          Add
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => handleOpenDirectChat(contact)}
+          className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm shadow-slate-950/5 transition hover:text-sky-600 dark:bg-slate-800 dark:text-slate-200"
+        >
+          Message
+        </button>
+      )}
+    </div>
+  );
+
+  const renderChatsPane = () => (
+    <>
+      <div className="glass-panel flex items-center justify-between rounded-[32px] px-4 py-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+            {getGreeting()}
+          </p>
+          <h1 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
+            {userInfo?.username || 'Workspace'}
+          </h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowGroupModal(true)}
+          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-500/30 transition hover:scale-[1.03]"
+          title="New chat or group"
+        >
+          <CirclePlus className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="glass-panel mt-4 rounded-[32px] p-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search messages, people, or groups"
+            className="w-full rounded-[22px] border border-transparent bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+          />
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          {[
+            { id: 'direct', label: 'Direct' },
+            { id: 'groups', label: 'Groups' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setConversationFilter(item.id)}
+              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                conversationFilter === item.id
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                  : 'bg-white/70 text-slate-600 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex-1 overflow-y-auto pr-1">
+        <div className="space-y-2.5">
+          {filteredConversations.map(renderConversationItem)}
+          {filteredConversations.length === 0 && (
+            <div className="glass-panel rounded-[32px] px-5 py-8 text-center">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">No conversations yet</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Start a direct chat or open a new group to begin.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  const renderContactsPane = () => (
+    <>
+      <div className="glass-panel rounded-[32px] px-4 py-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+          Contacts
+        </p>
+        <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">People you chat with</h2>
+        <div className="relative mt-4">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search by name or email"
+            className="w-full rounded-[22px] border border-transparent bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 flex-1 overflow-y-auto pr-1">
+        <div className="space-y-3">
+          {isSearchingContact && (
+            <div className="glass-panel rounded-[28px] px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+              Searching contacts...
+            </div>
+          )}
+
+          {contactSearchError && (
+            <div className="rounded-[28px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+              {contactSearchError}
+            </div>
+          )}
+
+          {unknownUserResult && renderContactItem(unknownUserResult, true)}
+
+          {(deferredSearch ? savedContactResults : filteredContacts).map((contact) => renderContactItem(contact))}
+
+          {!deferredSearch && filteredContacts.length === 0 && (
+            <div className="glass-panel rounded-[32px] px-5 py-8 text-center">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">No contacts yet</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Search by exact email to add someone to your list.
+              </p>
+            </div>
+          )}
+
+          {deferredSearch &&
+            !isSearchingContact &&
+            savedContactResults.length === 0 &&
+            !unknownUserResult &&
+            !contactSearchError && (
+              <div className="glass-panel rounded-[32px] px-5 py-8 text-center">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">No matching contacts</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Try an exact email address if you want to add someone new.
+                </p>
+              </div>
             )}
         </div>
+      </div>
+    </>
+  );
+
+  const renderCallsPane = () => (
+    <>
+      <div className="glass-panel rounded-[32px] px-4 py-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+          Calls
+        </p>
+        <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Call moments</h2>
+      </div>
+
+      <div className="mt-4 space-y-3 overflow-y-auto pr-1">
+        {[
+          { title: 'Voice calls', body: 'Voice and video actions are ready for a future backend pass.' },
+          { title: 'Design parity', body: 'The layout now reserves a native mobile Calls destination in the navigation.' },
+          { title: 'Reusable shell', body: 'This section uses the same glassmorphism treatment so it feels cohesive today.' },
+        ].map((card) => (
+          <div
+            key={card.title}
+            className="glass-panel rounded-[30px] bg-gradient-to-br from-white/85 to-sky-50/85 px-5 py-5 dark:from-slate-900/70 dark:to-slate-900/40"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
+                <Phone className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{card.body}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const renderSettingsContent = () => (
+    <form onSubmit={handleSaveProfile} className="space-y-4">
+      <div className="glass-panel rounded-[32px] px-4 py-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+          Settings
+        </p>
+        <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Profile and appearance</h2>
+      </div>
+
+      <div className="glass-panel rounded-[32px] p-4">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          Username
+        </label>
+        <input
+          type="text"
+          value={editUsername}
+          onChange={(event) => setEditUsername(event.target.value)}
+          className="w-full rounded-[22px] border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+        />
+      </div>
+
+      <SettingRow
+        label="Theme"
+        hint="Switch between bright and dim surfaces."
+        action={
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={`flex h-10 w-16 items-center rounded-full p-1 transition ${
+              isDarkMode ? 'bg-slate-900 dark:bg-sky-500/70' : 'bg-slate-200'
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow transition ${
+                isDarkMode ? 'translate-x-6' : ''
+              }`}
+            >
+              {isDarkMode ? <Moon className="h-4 w-4" /> : <SunMedium className="h-4 w-4" />}
+            </span>
+          </button>
+        }
+      />
+
+      <SettingRow
+        label="Notifications"
+        hint="Visual shell for future preferences."
+        action={
+          <div className="rounded-full bg-sky-500/10 p-2 text-sky-600 dark:text-sky-300">
+            <Bell className="h-4 w-4" />
+          </div>
+        }
+      />
+
+      <div className="flex gap-3">
+        <button
+          type="submit"
+          disabled={isSaving || !editUsername.trim()}
+          className="flex-1 rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+        >
+          {isSaving ? 'Saving...' : 'Save changes'}
+        </button>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
+        >
+          Sign out
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderSidebarPane = () => {
+    if (activeSection === 'contacts' || mobileSection === 'contacts') return renderContactsPane();
+    if (activeSection === 'calls' || mobileSection === 'calls') return renderCallsPane();
+    if (mobileSection === 'settings') return renderSettingsContent();
+    return renderChatsPane();
+  };
+
+  if (!userInfo || !socket) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300">
+        Connecting...
+      </div>
     );
+  }
+
+  return (
+    <div className="relative flex h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_28%),linear-gradient(180deg,_#f4fbff_0%,_#eef4f8_100%)] text-slate-900 transition-colors duration-500 dark:bg-[radial-gradient(circle_at_top_left,_rgba(14,116,144,0.24),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.14),_transparent_28%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-100">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:24px_24px] opacity-40 dark:opacity-15" />
+
+      <aside className="relative z-10 hidden w-24 shrink-0 flex-col items-center justify-between border-r border-white/50 px-4 py-6 backdrop-blur-xl dark:border-white/10 md:flex">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-[24px] bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-900">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          {desktopSections.map((section) => (
+            <DesktopNavButton
+              key={section.id}
+              active={activeSection === section.id}
+              icon={section.icon}
+              label={section.label}
+              onClick={() => {
+                setActiveSection(section.id);
+                setMobileSection(section.id === 'calls' ? 'calls' : 'chats');
+                setSearchTerm('');
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="flex flex-col items-center gap-4">
+          <DesktopNavButton
+            active={false}
+            icon={isDarkMode ? SunMedium : Moon}
+            label="Theme"
+            onClick={toggleTheme}
+          />
+          <DesktopNavButton
+            active={false}
+            icon={CirclePlus}
+            label="New Group"
+            onClick={() => setShowGroupModal(true)}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setEditUsername(userInfo.username);
+              setShowSettingsModal(true);
+            }}
+            className="group flex h-14 w-14 items-center justify-center rounded-[24px] bg-white/80 text-slate-900 shadow-lg shadow-slate-950/5 transition hover:bg-white dark:bg-slate-900/70 dark:text-white"
+          >
+            <span className="text-base font-semibold uppercase">{userInfo.username?.slice(0, 1)}</span>
+          </button>
+        </div>
+      </aside>
+
+      <div
+        className={`relative z-10 w-full shrink-0 flex-col border-r border-white/50 px-4 py-4 backdrop-blur-xl dark:border-white/10 md:flex md:w-[360px] xl:w-[400px] ${
+          mobileSection === 'chats' && showMobileChat ? 'hidden md:flex' : 'flex'
+        }`}
+      >
+        {renderSidebarPane()}
+      </div>
+
+      <main
+        className={`relative z-10 min-w-0 flex-1 flex-col ${
+          mobileSection !== 'chats' ? 'hidden md:flex' : showMobileChat ? 'flex' : 'hidden md:flex'
+        }`}
+      >
+        <ChatWindow
+          key={activeRoom}
+          socket={socket}
+          currentUser={userInfo}
+          roomId={activeRoom}
+          roomName={activeConversation?.name || activeRoom}
+          isGroupChat={activeConversation?.isGroup}
+          targetUserId={activeConversation?.targetUserId}
+          contacts={contacts}
+          onAddContact={handleAddContact}
+          onBack={() => setShowMobileChat(false)}
+          conversationMeta={activeConversation}
+        />
+      </main>
+
+      {!showMobileChat && (
+        <div className="absolute inset-x-4 bottom-4 z-20 md:hidden">
+          <div className="glass-panel flex items-center gap-2 rounded-[28px] p-2">
+            {mobileSections.map((section) => (
+              <MobileNavButton
+                key={section.id}
+                active={mobileSection === section.id}
+                icon={section.icon}
+                label={section.label}
+                onClick={() => {
+                  setMobileSection(section.id);
+                  if (section.id === 'chats') {
+                    setActiveSection('chats');
+                  }
+                  if (section.id === 'calls') {
+                    setActiveSection('calls');
+                  }
+                  if (section.id === 'settings') {
+                    setEditUsername(userInfo.username);
+                  }
+                  setSearchTerm('');
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showSettingsModal && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.8))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                  Preferences
+                </p>
+                <h3 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Profile settings</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {renderSettingsContent()}
+          </div>
+        </div>
+      )}
+
+      {showGroupModal && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.82))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.82))]">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                  New thread
+                </p>
+                <h3 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Create group or direct chat</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGroupModal(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateGroup} className="space-y-4">
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Group name
+                </label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={newRoomName}
+                  onChange={(event) => setNewRoomName(event.target.value)}
+                  placeholder="Leave blank and select one person for a direct chat"
+                  className="w-full rounded-[22px] border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Members
+                </label>
+                <div className="max-h-72 space-y-2 overflow-y-auto rounded-[28px] border border-white/60 bg-white/60 p-2 dark:border-white/10 dark:bg-slate-900/50">
+                  {usersForModal
+                    .filter((user) => user.id !== userInfo.id)
+                    .map((user) => {
+                      const selected = selectedUsers.includes(user.id);
+                      return (
+                        <label
+                          key={user.id}
+                          className={`flex cursor-pointer items-center gap-3 rounded-[24px] px-3 py-3 transition ${
+                            selected
+                              ? 'bg-sky-500/10 ring-1 ring-sky-500/20'
+                              : 'bg-transparent hover:bg-white/70 dark:hover:bg-slate-900/60'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() =>
+                              setSelectedUsers((prev) =>
+                                prev.includes(user.id)
+                                  ? prev.filter((item) => item !== user.id)
+                                  : [...prev, user.id],
+                              )
+                            }
+                            className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                          />
+                          <Avatar name={user.username} online={user.onlineStatus} tone="emerald" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                              {user.username}
+                            </p>
+                            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowGroupModal(false)}
+                  className="flex-1 rounded-[20px] bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white dark:bg-slate-900/70 dark:text-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                >
+                  Continue
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Dashboard;
