@@ -68,6 +68,8 @@ const ChatWindow = ({
 
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const shouldStickToBottomRef = useRef(true);
 
   const otherPersonInContacts = !isGroupChat && targetUserId
     ? contacts.some((contact) => normalizeId(contact.id) === normalizeId(targetUserId))
@@ -86,6 +88,7 @@ const ChatWindow = ({
     setIsLoadingMore(false);
     setTypingUsers([]);
     setHasLoadedRoom(false);
+    shouldStickToBottomRef.current = true;
 
     const cached = localStorage.getItem(`chat_history_${roomId}`);
     if (cached) {
@@ -223,9 +226,8 @@ const ChatWindow = ({
   }, [currentUser.id, currentUser.username, isGroupChat, roomId, senderInfo, socket]);
 
   useEffect(() => {
-    if (!isLoadingMore) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (isLoadingMore || !shouldStickToBottomRef.current) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoadingMore]);
 
   useEffect(() => {
@@ -237,6 +239,9 @@ const ChatWindow = ({
 
   const handleScroll = async (event) => {
     const container = event.target;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    shouldStickToBottomRef.current = distanceFromBottom < 120;
+
     if (container.scrollTop !== 0 || !hasMore || isLoadingMore || isOffline) return;
 
     setIsLoadingMore(true);
@@ -259,6 +264,7 @@ const ChatWindow = ({
 
         setTimeout(() => {
           container.scrollTop = container.scrollHeight - previousScrollHeight;
+          shouldStickToBottomRef.current = false;
           setIsLoadingMore(false);
         }, 0);
         return;
@@ -285,6 +291,7 @@ const ChatWindow = ({
     event.preventDefault();
     const trimmedMessage = currentMessage.trim();
     if (!trimmedMessage) return;
+    shouldStickToBottomRef.current = true;
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     socket.emit('stop_typing', { roomId, username: currentUser.username });
@@ -545,6 +552,7 @@ const ChatWindow = ({
             </div>
           )}
           <div
+            ref={scrollContainerRef}
             onScroll={handleScroll}
             className="chat-scroll h-full overflow-y-auto px-4 py-6 md:px-6"
           >
