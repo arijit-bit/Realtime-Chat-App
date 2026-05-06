@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
@@ -51,6 +51,39 @@ const formatConversationTime = (value) => {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 };
 
+const CACHE_TTL_MS = 15 * 60 * 1000;
+
+const readSessionCache = (key) => {
+  try {
+    const rawValue = sessionStorage.getItem(key);
+    if (!rawValue) return null;
+    const parsed = JSON.parse(rawValue);
+    if (!parsed || typeof parsed !== 'object' || parsed.expiresAt <= Date.now()) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return parsed.value;
+  } catch (error) {
+    console.error(error);
+    sessionStorage.removeItem(key);
+    return null;
+  }
+};
+
+const writeSessionCache = (key, value) => {
+  try {
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({
+        value,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      }),
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
   const classes =
     tone === 'emerald'
@@ -77,41 +110,47 @@ const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
   );
 };
 
-const DesktopNavButton = ({ active, icon: Icon, label, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    title={label}
-    className={`group relative flex h-11 w-11 items-center justify-center rounded-xl border transition ${
-      active
-        ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
-        : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
-    }`}
-  >
-    {active && (
-      <span className="absolute -left-5 h-7 w-1 rounded-full bg-slate-900 dark:bg-white" />
-    )}
-    <Icon className="h-5 w-5" />
-    <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
-      {label}
-    </span>
-  </button>
-);
+const DesktopNavButton = ({ active, icon, label, onClick }) => {
+  const Icon = icon;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      className={`group relative flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+        active
+          ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
+          : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
+      }`}
+    >
+      {active && (
+        <span className="absolute -left-5 h-7 w-1 rounded-full bg-slate-900 dark:bg-white" />
+      )}
+      <Icon className="h-5 w-5" />
+      <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
+        {label}
+      </span>
+    </button>
+  );
+};
 
-const MobileNavButton = ({ active, icon: Icon, label, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
-      active
-        ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
-        : 'text-slate-500 dark:text-slate-400'
-    }`}
-  >
-    <Icon className="h-5 w-5" />
-    <span>{label}</span>
-  </button>
-);
+const MobileNavButton = ({ active, icon, label, onClick }) => {
+  const Icon = icon;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
+        active
+          ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
+          : 'text-slate-500 dark:text-slate-400'
+      }`}
+    >
+      <Icon className="h-5 w-5" />
+      <span>{label}</span>
+    </button>
+  );
+};
 
 const SettingRow = ({ label, hint, action }) => (
   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
@@ -147,8 +186,13 @@ const Dashboard = () => {
   const [editUsername, setEditUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const activeRoomRef = useRef(activeRoom);
 
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
+
+  useEffect(() => {
+    activeRoomRef.current = activeRoom;
+  }, [activeRoom]);
 
   useEffect(() => {
     const totalUnread = conversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
@@ -175,31 +219,19 @@ const Dashboard = () => {
     const parsedUser = JSON.parse(storedUser);
     setUserInfo(parsedUser);
 
-    const cachedConversations = localStorage.getItem(`conversations_${parsedUser.id}`);
+    const cachedConversations = readSessionCache(`conversations_${parsedUser.id}`);
     if (cachedConversations) {
-      try {
-        setConversations(JSON.parse(cachedConversations));
-      } catch (error) {
-        console.error(error);
-      }
+      setConversations(cachedConversations);
     }
 
-    const cachedContacts = localStorage.getItem(`contacts_${parsedUser.id}`);
+    const cachedContacts = readSessionCache(`contacts_${parsedUser.id}`);
     if (cachedContacts) {
-      try {
-        setContacts(JSON.parse(cachedContacts));
-      } catch (error) {
-        console.error(error);
-      }
+      setContacts(cachedContacts);
     }
 
-    const cachedUsersForModal = localStorage.getItem('users_for_modal');
+    const cachedUsersForModal = readSessionCache('users_for_modal');
     if (cachedUsersForModal) {
-      try {
-        setUsersForModal(JSON.parse(cachedUsersForModal));
-      } catch (error) {
-        console.error(error);
-      }
+      setUsersForModal(cachedUsersForModal);
     }
 
     const newSocket = io(API_URL, { query: { userId: parsedUser.id } });
@@ -227,7 +259,7 @@ const Dashboard = () => {
             lastMessage: data.content,
             lastMessageTime: data.timestamp,
             unreadCount:
-              data.roomId !== activeRoom && data.senderId !== parsedUser.id
+              data.roomId !== activeRoomRef.current && data.senderId !== parsedUser.id
                 ? (currentConversation.unreadCount || 0) + 1
                 : 0,
           };
@@ -250,17 +282,17 @@ const Dashboard = () => {
     fetchUserContacts(parsedUser.id);
 
     return () => newSocket.disconnect();
-  }, [navigate, activeRoom]);
+  }, [navigate]);
 
   useEffect(() => {
     if (userInfo) {
-      localStorage.setItem(`conversations_${userInfo.id}`, JSON.stringify(conversations));
+      writeSessionCache(`conversations_${userInfo.id}`, conversations);
     }
   }, [conversations, userInfo]);
 
   useEffect(() => {
     if (userInfo) {
-      localStorage.setItem(`contacts_${userInfo.id}`, JSON.stringify(contacts));
+      writeSessionCache(`contacts_${userInfo.id}`, contacts);
     }
   }, [contacts, userInfo]);
 
@@ -323,14 +355,14 @@ const Dashboard = () => {
       const response = await fetch(`${API_URL}/api/conversations?userId=${userId}`);
       const data = await response.json();
       setConversations(data);
-      localStorage.setItem(`conversations_${userId}`, JSON.stringify(data));
+      writeSessionCache(`conversations_${userId}`, data);
 
-      if (!activeRoom && data.length > 0) {
+      if (!activeRoomRef.current && data.length > 0) {
         setActiveRoom(data[0].id);
         return;
       }
 
-      if (data.length > 0 && !data.some((conversation) => conversation.id === activeRoom)) {
+      if (data.length > 0 && !data.some((conversation) => conversation.id === activeRoomRef.current)) {
         setActiveRoom(data[0].id);
       }
     } catch (error) {
@@ -343,7 +375,7 @@ const Dashboard = () => {
       const response = await fetch(`${API_URL}/api/users`);
       const data = await response.json();
       setUsersForModal(data);
-      localStorage.setItem('users_for_modal', JSON.stringify(data));
+      writeSessionCache('users_for_modal', data);
     } catch (error) {
       console.error(error);
     }
@@ -355,7 +387,7 @@ const Dashboard = () => {
       const data = await response.json();
       if (Array.isArray(data)) {
         setContacts(data);
-        localStorage.setItem(`contacts_${userId}`, JSON.stringify(data));
+        writeSessionCache(`contacts_${userId}`, data);
       }
     } catch (error) {
       console.error('Error fetching contacts:', error);

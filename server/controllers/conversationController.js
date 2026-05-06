@@ -1,24 +1,86 @@
+const mongoose = require('mongoose');
 const ChatRoom = require('../models/ChatRoom');
 const Message = require('../models/Message');
 const User = require('../models/User');
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const buildDmRegex = (userId) => {
+    const safeUserId = escapeRegex(userId);
+    return new RegExp(`^${safeUserId}_.+|^.+_${safeUserId}$`);
+};
 
 const getConversations = async (req, res) => {
     try {
         const { userId } = req.query; 
         if (!userId) return res.status(400).json({ message: "userId query param required" });
 
+        const globalRoom = await ChatRoom.findOne({ roomName: 'Global Lounge' }).lean();
+
         // Get groups the user belongs to
-        const groups = await ChatRoom.find({ members: userId, isGroupChat: true });
-        
-        // Get all other users (to represent potential 1-1 conversations)
-        const users = await User.find({ _id: { $ne: userId } }).select('-password');
+        const groups = await ChatRoom.find({ members: userId, isGroupChat: true }).lean();
+        const dmRooms = await ChatRoom.find({ roomName: buildDmRegex(userId) }).lean();
 
         const conversations = [];
+        const roomIds = [
+            ...groups,
+            ...dmRooms,
+            ...(globalRoom ? [globalRoom] : [])
+        ].map((room) => room._id);
+        const roomObjectIds = roomIds.map((id) => new mongoose.Types.ObjectId(id));
+
+        const [latestMessages, unreadCounts] = await Promise.all([
+            roomObjectIds.length > 0
+                ? Message.aggregate([
+                    { $match: { roomId: { $in: roomObjectIds } } },
+                    { $sort: { timestamp: -1 } },
+                    {
+                        $group: {
+                            _id: '$roomId',
+                            content: { $first: '$content' },
+                            timestamp: { $first: '$timestamp' }
+                        }
+                    }
+                ])
+                : [],
+            roomObjectIds.length > 0
+                ? Message.aggregate([
+                    {
+                        $match: {
+                            roomId: { $in: roomObjectIds },
+                            senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+                            isRead: false
+                        }
+                    },
+                    { $group: { _id: '$roomId', count: { $sum: 1 } } }
+                ])
+                : []
+        ]);
+
+        const latestMessageByRoomId = new Map(
+            latestMessages.map((message) => [message._id.toString(), message])
+        );
+        const unreadCountByRoomId = new Map(
+            unreadCounts.map((item) => [item._id.toString(), item.count])
+        );
+
+        const peerUserIds = [
+            ...new Set(
+                dmRooms
+                    .map((room) => room.roomName.split('_').find((id) => id !== userId))
+                    .filter(Boolean)
+            )
+        ];
+        const peerUsers = peerUserIds.length > 0
+            ? await User.find({ _id: { $in: peerUserIds } }).select('username onlineStatus').lean()
+            : [];
+        const peerUserById = new Map(peerUsers.map((user) => [user._id.toString(), user]));
 
         // Map Groups
         for (let group of groups) {
-            const lastMsg = await Message.findOne({ roomId: group._id }).sort({ timestamp: -1 });
-            const unreadCount = await Message.countDocuments({ roomId: group._id, senderId: { $ne: userId }, isRead: false });
+            const roomId = group._id.toString();
+            const lastMsg = latestMessageByRoomId.get(roomId);
+            const unreadCount = unreadCountByRoomId.get(roomId) || 0;
 
             conversations.push({
                 id: group.roomName, 
@@ -31,42 +93,40 @@ const getConversations = async (req, res) => {
             });
         }
 
-        // Map 1-1 Users
-        for (let user of users) {
-             const p1 = userId;
-             const p2 = user._id.toString();
-             const oneOnOneRoomName = p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
+        // Map 1-1 rooms
+        for (let room of dmRooms) {
+            const roomId = room._id.toString();
+            const lastMsg = latestMessageByRoomId.get(roomId);
+            if (!lastMsg) {
+                continue;
+            }
 
-             const room = await ChatRoom.findOne({ roomName: oneOnOneRoomName });
+            const targetUserId = room.roomName.split('_').find((id) => id !== userId);
+            const targetUser = peerUserById.get(targetUserId);
+            if (!targetUser) {
+                continue;
+            }
 
-             if (room) {
-                 const lastMsg = await Message.findOne({ roomId: room._id }).sort({ timestamp: -1 });
-                 // Only inject into sidebar if an active message footprint exists
-                 if (lastMsg) {
-                     const unreadCount = await Message.countDocuments({ roomId: room._id, senderId: { $ne: userId }, isRead: false });
-                     
-                     conversations.push({
-                         id: oneOnOneRoomName,
-                         name: user.username,
-                         isGroup: false,
-                         targetUserId: user._id.toString(), 
-                         lastMessage: lastMsg.content,
-                         lastMessageTime: lastMsg.timestamp,
-                         unreadCount,
-                         onlineStatus: user.onlineStatus
-                     });
-                 }
-             }
+            conversations.push({
+                id: room.roomName,
+                name: targetUser.username,
+                isGroup: false,
+                targetUserId,
+                lastMessage: lastMsg.content,
+                lastMessageTime: lastMsg.timestamp,
+                unreadCount: unreadCountByRoomId.get(roomId) || 0,
+                onlineStatus: targetUser.onlineStatus
+            });
         }
 
         // Sort descending (most recent message at the top)
         conversations.sort((a,b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
 
         // Let's add "Global Lounge" unconditionally for fallback parity
-        const globalRoom = await ChatRoom.findOne({ roomName: 'Global Lounge' });
         if (globalRoom) {
-            const lastMsg = await Message.findOne({ roomId: globalRoom._id }).sort({ timestamp: -1 });
-            const unreadCount = await Message.countDocuments({ roomId: globalRoom._id, senderId: { $ne: userId }, isRead: false });
+            const roomId = globalRoom._id.toString();
+            const lastMsg = latestMessageByRoomId.get(roomId);
+            const unreadCount = unreadCountByRoomId.get(roomId) || 0;
             conversations.unshift({
                 id: 'Global Lounge',
                 name: 'Global Lounge',

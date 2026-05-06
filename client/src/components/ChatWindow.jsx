@@ -28,6 +28,39 @@ const formatDateLabel = (value) => {
 
 const normalizeId = (value) => String(value ?? '');
 
+const CHAT_CACHE_TTL_MS = 15 * 60 * 1000;
+
+const readChatCache = (key) => {
+  try {
+    const rawValue = sessionStorage.getItem(key);
+    if (!rawValue) return null;
+    const parsed = JSON.parse(rawValue);
+    if (!parsed || typeof parsed !== 'object' || parsed.expiresAt <= Date.now()) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return parsed.value;
+  } catch (error) {
+    console.error('Failed to parse cached messages', error);
+    sessionStorage.removeItem(key);
+    return null;
+  }
+};
+
+const writeChatCache = (key, value) => {
+  try {
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({
+        value,
+        expiresAt: Date.now() + CHAT_CACHE_TTL_MS,
+      }),
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const StatusIcon = ({ message }) => {
   if (message.isRead) {
     return <CheckCheck className="h-3.5 w-3.5 text-[#53bdeb]" strokeWidth={2.5} />;
@@ -57,7 +90,7 @@ const ChatWindow = ({
   const [typingUsers, setTypingUsers] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(() => !Boolean(localStorage.getItem(`chat_history_${roomId}`)));
+  const [isInitialLoading, setIsInitialLoading] = useState(() => readChatCache(`chat_history_${roomId}`) == null);
   const [hasLoadedRoom, setHasLoadedRoom] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -70,6 +103,7 @@ const ChatWindow = ({
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const shouldStickToBottomRef = useRef(true);
+  const senderInfoRef = useRef(senderInfo);
 
   const otherPersonInContacts = !isGroupChat && targetUserId
     ? contacts.some((contact) => normalizeId(contact.id) === normalizeId(targetUserId))
@@ -81,6 +115,10 @@ const ChatWindow = ({
   }, [roomId]);
 
   useEffect(() => {
+    senderInfoRef.current = senderInfo;
+  }, [senderInfo]);
+
+  useEffect(() => {
     if (!socket || !roomId) return undefined;
 
     setHasMore(false);
@@ -90,16 +128,11 @@ const ChatWindow = ({
     setHasLoadedRoom(false);
     shouldStickToBottomRef.current = true;
 
-    const cached = localStorage.getItem(`chat_history_${roomId}`);
+    const cached = readChatCache(`chat_history_${roomId}`);
     if (cached) {
-      try {
-        setMessages(JSON.parse(cached));
-        setIsInitialLoading(false);
-        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
-      } catch (error) {
-        console.error('Failed to parse cached messages', error);
-        setIsInitialLoading(true);
-      }
+      setMessages(cached);
+      setIsInitialLoading(false);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
     } else {
       setMessages([]);
       setIsInitialLoading(true);
@@ -119,7 +152,7 @@ const ChatWindow = ({
         setMessages(historyData);
         setHasMore(data.hasMore || false);
         setIsOffline(false);
-        localStorage.setItem(`chat_history_${roomId}`, JSON.stringify(historyData.slice(-50)));
+        writeChatCache(`chat_history_${roomId}`, historyData.slice(-50));
         socket.emit('messages_read', { roomId, readerId: currentUser.id });
 
         if (!isGroupChat && historyData.length > 0) {
@@ -182,7 +215,7 @@ const ChatWindow = ({
 
       if (normalizeId(data.senderId) !== normalizeId(currentUser.id)) {
         socket.emit('messages_read', { roomId, readerId: currentUser.id });
-        if (!isGroupChat && !senderInfo) {
+        if (!isGroupChat && !senderInfoRef.current) {
           setSenderInfo({ id: data.senderId, username: data.senderName });
         }
       }
@@ -218,12 +251,15 @@ const ChatWindow = ({
     socket.on('user_stop_typing', stopTypingHandler);
 
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
       socket.off('receive_message', messageHandler);
       socket.off('read_status_updated', readStatusHandler);
       socket.off('user_typing', typingHandler);
       socket.off('user_stop_typing', stopTypingHandler);
     };
-  }, [currentUser.id, currentUser.username, isGroupChat, roomId, senderInfo, socket]);
+  }, [currentUser.id, currentUser.username, isGroupChat, roomId, socket]);
 
   useEffect(() => {
     if (isLoadingMore || !shouldStickToBottomRef.current) return;
@@ -233,7 +269,7 @@ const ChatWindow = ({
   useEffect(() => {
     if (messages.length > 0 && roomId) {
       const latestMessages = messages.slice(-50);
-      localStorage.setItem(`chat_history_${roomId}`, JSON.stringify(latestMessages));
+      writeChatCache(`chat_history_${roomId}`, latestMessages);
     }
   }, [messages, roomId]);
 
