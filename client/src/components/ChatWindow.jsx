@@ -573,7 +573,7 @@ const ChatWindow = ({
           </div>
         )}
 
-        <div className="relative flex-1">
+        <div className="relative flex-1 overflow-y-auto">
           {isInitialLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/72 backdrop-blur-2xl dark:bg-slate-950/72">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 shadow-lg shadow-slate-950/10 dark:bg-slate-900/85">

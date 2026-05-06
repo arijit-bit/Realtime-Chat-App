@@ -110,47 +110,41 @@ const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
   );
 };
 
-const DesktopNavButton = ({ active, icon, label, onClick }) => {
-  const Icon = icon;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      className={`group relative flex h-11 w-11 items-center justify-center rounded-xl border transition ${
-        active
-          ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
-          : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
-      }`}
-    >
-      {active && (
-        <span className="absolute -left-5 h-7 w-1 rounded-full bg-slate-900 dark:bg-white" />
-      )}
-      <Icon className="h-5 w-5" />
-      <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
-        {label}
-      </span>
-    </button>
-  );
-};
+const DesktopNavButton = ({ active, icon: Icon, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={label}
+    className={`group relative flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+      active
+        ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
+        : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
+    }`}
+  >
+    {active && (
+      <span className="absolute -left-5 h-7 w-1 rounded-full bg-slate-900 dark:bg-white" />
+    )}
+    <Icon className="h-5 w-5" />
+    <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
+      {label}
+    </span>
+  </button>
+);
 
-const MobileNavButton = ({ active, icon, label, onClick }) => {
-  const Icon = icon;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
-        active
-          ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
-          : 'text-slate-500 dark:text-slate-400'
-      }`}
-    >
-      <Icon className="h-5 w-5" />
-      <span>{label}</span>
-    </button>
-  );
-};
+const MobileNavButton = ({ active, icon: Icon, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
+      active
+        ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
+        : 'text-slate-500 dark:text-slate-400'
+    }`}
+  >
+    <Icon className="h-5 w-5" />
+    <span>{label}</span>
+  </button>
+);
 
 const SettingRow = ({ label, hint, action }) => (
   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">

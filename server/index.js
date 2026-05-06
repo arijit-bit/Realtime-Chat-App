@@ -12,7 +12,8 @@ connectDB();
 const app = express();
 
 const allowedOrigins = [
-  'https://pegion-mail.vercel.app'
+  'https://pegion-mail.vercel.app',
+  'http://localhost:3000',
 ];
 
 app.use(cors({
