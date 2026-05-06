@@ -491,9 +491,8 @@ const ChatWindow = ({
               </div>
               {!isGroupChat && (
                 <span
-                  className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-950 ${
-                    conversationMeta?.onlineStatus ? 'bg-emerald-400' : 'bg-slate-300 dark:bg-slate-600'
-                  }`}
+                  className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-950 ${conversationMeta?.onlineStatus ? 'bg-emerald-400' : 'bg-slate-300 dark:bg-slate-600'
+                    }`}
                 />
               )}
             </div>
@@ -592,90 +591,94 @@ const ChatWindow = ({
             onScroll={handleScroll}
             className="chat-scroll h-full overflow-y-auto px-4 py-6 md:px-6"
           >
-          {isLoadingMore && (
-            <div className="mb-3 flex justify-center">
-              <div className="h-6 w-6 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
-            </div>
-          )}
-
-          {messageRows.length === 0 && !isLoadingMore && !isInitialLoading && hasLoadedRoom && (
-            <div className="flex h-full flex-col items-center justify-center text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-white/80 shadow-lg shadow-slate-950/5 dark:bg-slate-900/70">
-                <MoreHorizontal className="h-8 w-8 text-slate-400" />
+            {isLoadingMore && (
+              <div className="mb-3 flex justify-center">
+                <div className="h-6 w-6 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
               </div>
-              <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No messages yet</p>
-              <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
-                Start the conversation with a clean, modern thread designed for light and dark mode.
-              </p>
-            </div>
-          )}
+            )}
 
-          <div className="space-y-1">
-            {messageRows.map((message) => (
-              <React.Fragment key={message.id}>
-                {message.showDate && (
-                  <div className="sticky top-4 z-10 flex justify-center py-3">
-                    <span className="rounded-full border border-white/60 bg-white/75 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/75 dark:text-slate-300">
-                      {formatDateLabel(message.timestamp)}
-                    </span>
-                  </div>
-                )}
+            {messageRows.length === 0 && !isLoadingMore && !isInitialLoading && hasLoadedRoom && (
+              <div className="flex h-full flex-col items-center justify-center text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-white/80 shadow-lg shadow-slate-950/5 dark:bg-slate-900/70">
+                  <MoreHorizontal className="h-8 w-8 text-slate-400" />
+                </div>
+                <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No messages yet</p>
+                <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
+                  Start the conversation with a clean, modern thread designed for light and dark mode.
+                </p>
+              </div>
+            )}
 
-                <div className={`flex ${message.own ? 'justify-end' : 'justify-start'} ${message.groupedStart ? 'mt-3' : 'mt-1.5'}`}>
-                  <div className={`max-w-[85%] sm:max-w-[72%] ${message.own ? 'items-end' : 'items-start'} flex flex-col`}>
-                    {message.showName && (
-                      <span className="mb-1.5 pl-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                        {message.senderName}
+            <div className="space-y-1">
+              {messageRows.map((message) => (
+                <React.Fragment key={message.id}>
+                  {message.showDate && (
+                    <div className="sticky top-4 z-10 flex justify-center py-3">
+                      <span className="rounded-full border border-white/60 bg-white/75 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/75 dark:text-slate-300">
+                        {formatDateLabel(message.timestamp)}
                       </span>
-                    )}
+                    </div>
+                  )}
 
-                    <div
-                      className={`relative transition ${message._animate ? 'message-pop' : ''} ${
-                        message.own
+                  <div className={`flex ${message.own ? 'justify-end' : 'justify-start'} ${message.groupedStart ? 'mt-3' : 'mt-1.5'}`}>
+                    <div className={`max-w-[85%] sm:max-w-[72%] ${message.own ? 'items-end' : 'items-start'} flex flex-col`}>
+
+
+                      <div
+                        className={`relative p-[5px] pb-[15px] min-w-[100px] transition ${message._animate ? 'message-pop' : ''} ${message.own
                           ? 'rounded-xl bg-[#0b8f72] text-white shadow-sm'
                           : 'rounded-xl border border-white/70 bg-white text-slate-900 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:text-slate-100'
-                      } ${
-                        message.groupedStart
-                          ? message.own
-                            ? 'rounded-br-md'
-                            : 'rounded-bl-md'
-                        : message.own
-                            ? 'rounded-br-xl'
-                            : 'rounded-bl-xl'
-                      } max-w-full px-4 py-2.5`}
-                    >
-                      <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
-                      <div
-                        className={`mt-1.5 flex items-center gap-1 text-[11px] ${
-                          message.own ? 'justify-end text-white/75' : 'justify-end text-slate-400 dark:text-slate-500'
-                        }`}
+                          } ${message.groupedStart
+                            ? message.own
+                              ? 'rounded-br-md'
+                              : 'rounded-bl-md'
+                            : message.own
+                              ? 'rounded-br-xl'
+                              : 'rounded-bl-xl'
+                          } max-w-full px-4 py-2.5`}
                       >
-                        <span className="leading-none">{formatMessageTime(message.timestamp)}</span>
-                        {message.own && <StatusIcon message={message} />}
+                        <div className='flex flex-col'>
+                          <div className='flex w-full justify-start'>
+                            {message.showName && (
+                              <span className="mb-1.5 pl-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                                {message.senderName}
+                              </span>
+                            )}
+                          </div>
+                          <div className='flex justify-between'>
+                            <p className=" break-words whitespace-pre-wrap text-sm leading-6 w-full">{message.content}</p>
+                          </div>
+                          <div
+                            className={`mt-1.5 flex items-center gap-1 text-[11px] ${message.own ? 'justify-end text-white/75' : 'justify-end text-slate-400 dark:text-slate-500'} absolute bottom-1 right-2`}
+                          >
+                            <span className="leading-none">{formatMessageTime(message.timestamp)}</span>
+                            {message.own && <StatusIcon message={message} />}
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </React.Fragment>
+              ))}
+
+              {typingUsers.length > 0 && (
+                <div className="mt-3 flex justify-start">
+                  <div className="rounded-xl rounded-bl-md border border-white/70 bg-white px-4 py-3 text-sm text-slate-600 shadow-lg shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <span>{typingUsers.join(', ')} typing</span>
+                      <div className="flex items-center gap-1">
+                        <span className="typing-dot" />
+                        <span className="typing-dot [animation-delay:120ms]" />
+                        <span className="typing-dot [animation-delay:240ms]" />
                       </div>
                     </div>
                   </div>
                 </div>
-              </React.Fragment>
-            ))}
+              )}
+            </div>
 
-            {typingUsers.length > 0 && (
-              <div className="mt-3 flex justify-start">
-                <div className="rounded-xl rounded-bl-md border border-white/70 bg-white px-4 py-3 text-sm text-slate-600 shadow-lg shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <span>{typingUsers.join(', ')} typing</span>
-                    <div className="flex items-center gap-1">
-                      <span className="typing-dot" />
-                      <span className="typing-dot [animation-delay:120ms]" />
-                      <span className="typing-dot [animation-delay:240ms]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
           </div>
         </div>
 
