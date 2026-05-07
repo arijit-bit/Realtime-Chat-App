@@ -8,10 +8,15 @@ const registerUser = async (req, res) => {
     try {
         const { username, email, password, avatar } = req.body;
 
-        const userExists = await User.findOne({ $or: [{ email }, { username }] });
+        // Check username and email separately to give specific error messages
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.status(400).json({ message: 'Username already taken' });
+        }
 
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+        const existingEmail = await User.findOne({ email });
+        if (existingEmail) {
+            return res.status(400).json({ message: 'Email already registered' });
         }
 
         const user = await User.create({
@@ -39,17 +44,35 @@ const registerUser = async (req, res) => {
     }
 };
 
-// @desc    Auth user & get token
+// @desc    Check if a username is available
+// @route   GET /api/auth/check-username?username=xxx
+// @access  Public
+const checkUsername = async (req, res) => {
+    try {
+        const { username } = req.query;
+
+        if (!username || username.trim().length < 3) {
+            return res.status(400).json({ message: 'Username must be at least 3 characters' });
+        }
+
+        const exists = await User.findOne({ username: username.trim() });
+        res.json({ available: !exists });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Auth user & get token (login with username instead of email)
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { username, password } = req.body;
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ username });
 
         if (user && (await user.matchPassword(password))) {
-            // Setup online status to true
+            // Set online status to true
             user.onlineStatus = true;
             await user.save();
 
@@ -62,7 +85,7 @@ const loginUser = async (req, res) => {
                 token: generateToken(user._id)
             });
         } else {
-            res.status(401).json({ message: 'Invalid email or password' });
+            res.status(401).json({ message: 'Invalid username or password' });
         }
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -71,5 +94,6 @@ const loginUser = async (req, res) => {
 
 module.exports = {
     registerUser,
+    checkUsername,
     loginUser
 };

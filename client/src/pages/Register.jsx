@@ -1,22 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LockKeyhole, Mail, MessageCircle, UserRound, Zap, Shield, Globe } from 'lucide-react';
+import {
+  Eye, EyeOff, LockKeyhole, Mail, MessageCircle,
+  AtSign, Check, X, Loader, Zap, Shield, Globe
+} from 'lucide-react';
 import '../styles/Auth.css';
 import { API_URL } from '../config';
 
+// Debounce helper
+const useDebounce = (value, delay) => {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+};
+
 const Register = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername]         = useState('');
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError]               = useState(null);
+  const [loading, setLoading]           = useState(false);
   const navigate = useNavigate();
+
+  // ── Username availability state ──
+  const [usernameStatus, setUsernameStatus] = useState('idle');
+  // idle | checking | available | taken | short
+  const [usernameMsg, setUsernameMsg]       = useState('');
+  const debouncedUsername = useDebounce(username, 550);
+  const abortRef = useRef(null);
+
+  // Real-time username check
+  useEffect(() => {
+    const trimmed = debouncedUsername.trim();
+
+    if (!trimmed) {
+      setUsernameStatus('idle');
+      setUsernameMsg('');
+      return;
+    }
+    if (trimmed.length < 3) {
+      setUsernameStatus('short');
+      setUsernameMsg('Username must be at least 3 characters');
+      return;
+    }
+
+    // Cancel any in-flight request
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
+    setUsernameStatus('checking');
+    setUsernameMsg('');
+
+    fetch(`${API_URL}/api/auth/check-username?username=${encodeURIComponent(trimmed)}`, {
+      signal: abortRef.current.signal,
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.available) {
+          setUsernameStatus('available');
+          setUsernameMsg('Username is available!');
+        } else {
+          setUsernameStatus('taken');
+          setUsernameMsg('Username already taken');
+        }
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          setUsernameStatus('idle');
+          setUsernameMsg('');
+        }
+      });
+  }, [debouncedUsername]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username || !email || !password) {
       setError('Please fill in all required fields');
+      return;
+    }
+    if (usernameStatus === 'taken') {
+      setError('That username is already taken — please choose another.');
+      return;
+    }
+    if (usernameStatus === 'short') {
+      setError('Username must be at least 3 characters.');
       return;
     }
 
@@ -27,7 +98,7 @@ const Register = () => {
       const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username: username.trim(), email, password }),
       });
 
       const data = await response.json();
@@ -45,11 +116,32 @@ const Register = () => {
     }
   };
 
+  // ── Username status icon & colour helpers ──
+  const usernameStatusIcon = () => {
+    if (usernameStatus === 'checking')  return <Loader size={16} className="auth-spin-icon" />;
+    if (usernameStatus === 'available') return <Check size={16} />;
+    if (usernameStatus === 'taken')     return <X size={16} />;
+    if (usernameStatus === 'short')     return <X size={16} />;
+    return null;
+  };
+
+  const usernameStatusClass = () => {
+    if (usernameStatus === 'available') return 'username-hint username-ok';
+    if (usernameStatus === 'taken' || usernameStatus === 'short') return 'username-hint username-err';
+    if (usernameStatus === 'checking')  return 'username-hint username-checking';
+    return '';
+  };
+
+  const inputWrapStatus = () => {
+    if (usernameStatus === 'available') return 'auth-input-wrap input-ok';
+    if (usernameStatus === 'taken' || usernameStatus === 'short') return 'auth-input-wrap input-err';
+    return 'auth-input-wrap';
+  };
+
   return (
     <div className="auth-shell">
       {/* ── Left hero panel ── */}
       <section className="auth-hero" aria-hidden="true">
-        {/* Animated bubble background */}
         <div className="auth-bubbles">
           <span className="bubble bubble-1" />
           <span className="bubble bubble-2" />
@@ -59,7 +151,6 @@ const Register = () => {
         </div>
 
         <div className="auth-hero-inner">
-          {/* Brand */}
           <div className="auth-brand">
             <div className="auth-brand-mark">
               <MessageCircle size={20} />
@@ -70,7 +161,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Headline copy */}
           <div className="auth-hero-copy">
             <span className="auth-kicker">
               <Zap size={12} /> Join the community
@@ -83,30 +173,23 @@ const Register = () => {
               human communication — whether you're messaging a friend or coordinating a team.
             </p>
 
-            {/* Feature cards */}
             <div className="auth-feature-grid">
               <div className="auth-feature-card">
-                <span className="auth-feature-icon">
-                  <Zap size={16} />
-                </span>
+                <span className="auth-feature-icon"><Zap size={16} /></span>
                 <div>
                   <strong>Set up in seconds</strong>
                   <span>One form, and you're inside your workspace.</span>
                 </div>
               </div>
               <div className="auth-feature-card">
-                <span className="auth-feature-icon">
-                  <Shield size={16} />
-                </span>
+                <span className="auth-feature-icon"><Shield size={16} /></span>
                 <div>
                   <strong>Private by default</strong>
                   <span>Only you and your contacts see your messages.</span>
                 </div>
               </div>
               <div className="auth-feature-card">
-                <span className="auth-feature-icon">
-                  <Globe size={16} />
-                </span>
+                <span className="auth-feature-icon"><Globe size={16} /></span>
                 <div>
                   <strong>Works everywhere</strong>
                   <span>Phone, tablet, laptop — same seamless experience.</span>
@@ -116,7 +199,7 @@ const Register = () => {
           </div>
         </div>
 
-        {/* Floating chat preview mockup */}
+        {/* Chat preview mockup */}
         <div className="auth-chat-preview">
           <div className="chat-preview-bubble incoming">
             <span className="chat-preview-avatar">S</span>
@@ -132,9 +215,7 @@ const Register = () => {
             </div>
           </div>
           <div className="chat-preview-typing">
-            <span />
-            <span />
-            <span />
+            <span /><span /><span />
           </div>
         </div>
       </section>
@@ -155,7 +236,7 @@ const Register = () => {
 
           <div className="auth-card-head">
             <h2>Create your account ✨</h2>
-            <p>Join NeoChat and start chatting in real time.</p>
+            <p>Pick a unique username — it's how people find you.</p>
           </div>
 
           {error && (
@@ -166,31 +247,41 @@ const Register = () => {
           )}
 
           <form className="auth-form" onSubmit={handleSubmit} noValidate>
-            {/* Username */}
+
+            {/* Username with real-time check */}
             <div className="auth-field">
-              <label htmlFor="reg-username">Username</label>
-              <div className="auth-input-wrap">
-                <span className="auth-input-icon">
-                  <UserRound size={17} />
-                </span>
+              <label htmlFor="reg-username">Username (your unique ID)</label>
+              <div className={inputWrapStatus()}>
+                <span className="auth-input-icon"><AtSign size={17} /></span>
                 <input
                   type="text"
                   id="reg-username"
-                  placeholder="Choose a username"
+                  placeholder="Choose a unique username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
+                  spellCheck={false}
                 />
+                {/* Live status indicator */}
+                {usernameStatus !== 'idle' && (
+                  <span className={`auth-username-badge ${usernameStatus === 'available' ? 'badge-ok' : usernameStatus === 'checking' ? 'badge-checking' : 'badge-err'}`}>
+                    {usernameStatusIcon()}
+                  </span>
+                )}
               </div>
+              {/* Status message below input */}
+              {usernameMsg && (
+                <span className={usernameStatusClass()}>
+                  {usernameMsg}
+                </span>
+              )}
             </div>
 
             {/* Email */}
             <div className="auth-field">
               <label htmlFor="reg-email">Email address</label>
               <div className="auth-input-wrap">
-                <span className="auth-input-icon">
-                  <Mail size={17} />
-                </span>
+                <span className="auth-input-icon"><Mail size={17} /></span>
                 <input
                   type="email"
                   id="reg-email"
@@ -206,9 +297,7 @@ const Register = () => {
             <div className="auth-field">
               <label htmlFor="reg-password">Password</label>
               <div className="auth-input-wrap">
-                <span className="auth-input-icon">
-                  <LockKeyhole size={17} />
-                </span>
+                <span className="auth-input-icon"><LockKeyhole size={17} /></span>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="reg-password"
@@ -228,7 +317,11 @@ const Register = () => {
               </div>
             </div>
 
-            <button type="submit" className="auth-submit-btn" disabled={loading}>
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={loading || usernameStatus === 'taken' || usernameStatus === 'checking' || usernameStatus === 'short'}
+            >
               {loading ? (
                 <span className="auth-spinner-wrap">
                   <span className="auth-spinner" />
@@ -240,9 +333,7 @@ const Register = () => {
             </button>
           </form>
 
-          <div className="auth-divider">
-            <span>or</span>
-          </div>
+          <div className="auth-divider"><span>or</span></div>
 
           <div className="auth-switch">
             Already have an account?{' '}

@@ -4,11 +4,30 @@
 
 /* ── Shell (two-column split) ── */
 .auth-shell {
-  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   overflow: hidden;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Dark scrollbar for the hero panel ── */
+.auth-hero::-webkit-scrollbar {
+  width: 5px;
+}
+.auth-hero::-webkit-scrollbar-track {
+  background: transparent;
+}
+.auth-hero::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.35);
+  border-radius: 999px;
+}
+.auth-hero::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.6);
+}
+.auth-hero {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(167, 139, 250, 0.35) transparent;
 }
 
 /* ═══════════════════════════
@@ -16,6 +35,7 @@
    ═══════════════════════════ */
 .auth-hero {
   position: relative;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -24,7 +44,8 @@
     radial-gradient(ellipse at 20% 10%, rgba(139, 92, 246, 0.35) 0%, transparent 55%),
     radial-gradient(ellipse at 80% 85%, rgba(59, 130, 246, 0.3) 0%, transparent 55%),
     linear-gradient(160deg, #0f0c29 0%, #1a1040 45%, #0f1729 100%);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   isolation: isolate;
 }
 
@@ -351,6 +372,7 @@
    Right panel (form)
    ═══════════════════════════ */
 .auth-panel {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -359,6 +381,7 @@
     radial-gradient(ellipse at 50% 0%, rgba(124, 58, 237, 0.08) 0%, transparent 60%),
     linear-gradient(180deg, #f8faff 0%, #f0f4ff 100%);
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 /* ── Auth card ── */
@@ -463,6 +486,52 @@
 }
 
 .auth-forgot-link:hover { color: #4f46e5; }
+
+/* ── Username availability states ── */
+.input-ok {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12) !important;
+}
+
+.input-err {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Hint text below username input */
+.username-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 0.1rem;
+}
+
+.username-ok  { color: #16a34a; }
+.username-err { color: #dc2626; }
+.username-checking { color: #6366f1; }
+
+/* Spinning icon for "checking" state */
+.auth-spin-icon {
+  animation: spin 0.7s linear infinite;
+}
+
+/* Badge indicator inside the input (right side) */
+.auth-username-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge-ok       { color: #22c55e; }
+.badge-err      { color: #ef4444; }
+.badge-checking { color: #6366f1; }
+
 
 /* ── Input wrapper ── */
 .auth-input-wrap {
@@ -685,6 +754,7 @@
 @media (max-width: 860px) {
   .auth-shell {
     grid-template-columns: 1fr;
+    height: 100dvh;
   }
 
   .auth-hero {
@@ -692,10 +762,10 @@
   }
 
   .auth-panel {
-    min-height: 100dvh;
+    height: 100%;
     padding: 1.5rem 1.25rem;
     align-items: flex-start;
-    padding-top: clamp(2rem, 8vw, 4rem);
+    padding-top: clamp(1.5rem, 6vw, 3.5rem);
   }
 
   .auth-card {

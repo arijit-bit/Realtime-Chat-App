@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LockKeyhole, Mail, MessageCircle, Zap, Shield, Globe } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole, AtSign, MessageCircle, Zap, Shield, Globe } from 'lucide-react';
 import '../styles/Auth.css';
 import { API_URL } from '../config';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
@@ -14,7 +14,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!username || !password) {
       setError('Please fill in all fields');
       return;
     }
@@ -26,7 +26,7 @@ const Login = () => {
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
 
       const data = await response.json();
@@ -52,7 +52,6 @@ const Login = () => {
     <div className="auth-shell">
       {/* ── Left hero panel ── */}
       <section className="auth-hero" aria-hidden="true">
-        {/* Animated bubble background */}
         <div className="auth-bubbles">
           <span className="bubble bubble-1" />
           <span className="bubble bubble-2" />
@@ -62,7 +61,6 @@ const Login = () => {
         </div>
 
         <div className="auth-hero-inner">
-          {/* Brand */}
           <div className="auth-brand">
             <div className="auth-brand-mark">
               <MessageCircle size={20} />
@@ -73,7 +71,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Headline copy */}
           <div className="auth-hero-copy">
             <span className="auth-kicker">
               <Zap size={12} /> Live &amp; always on
@@ -86,30 +83,23 @@ const Login = () => {
               organized workspace — built for the way you actually communicate.
             </p>
 
-            {/* Feature cards */}
             <div className="auth-feature-grid">
               <div className="auth-feature-card">
-                <span className="auth-feature-icon">
-                  <Zap size={16} />
-                </span>
+                <span className="auth-feature-icon"><Zap size={16} /></span>
                 <div>
                   <strong>Instant delivery</strong>
                   <span>Socket-powered live updates across every room.</span>
                 </div>
               </div>
               <div className="auth-feature-card">
-                <span className="auth-feature-icon">
-                  <Shield size={16} />
-                </span>
+                <span className="auth-feature-icon"><Shield size={16} /></span>
                 <div>
                   <strong>Private by default</strong>
                   <span>Your messages stay between you and who you choose.</span>
                 </div>
               </div>
               <div className="auth-feature-card">
-                <span className="auth-feature-icon">
-                  <Globe size={16} />
-                </span>
+                <span className="auth-feature-icon"><Globe size={16} /></span>
                 <div>
                   <strong>Works everywhere</strong>
                   <span>Phone, tablet, laptop — same seamless experience.</span>
@@ -119,7 +109,7 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Floating chat preview mockup */}
+        {/* Chat preview */}
         <div className="auth-chat-preview">
           <div className="chat-preview-bubble incoming">
             <span className="chat-preview-avatar">A</span>
@@ -142,9 +132,7 @@ const Login = () => {
             </div>
           </div>
           <div className="chat-preview-typing">
-            <span />
-            <span />
-            <span />
+            <span /><span /><span />
           </div>
         </div>
       </section>
@@ -165,7 +153,7 @@ const Login = () => {
 
           <div className="auth-card-head">
             <h2>Welcome back 👋</h2>
-            <p>Sign in to jump back into your conversations.</p>
+            <p>Sign in with your username to continue.</p>
           </div>
 
           {error && (
@@ -176,36 +164,28 @@ const Login = () => {
           )}
 
           <form className="auth-form" onSubmit={handleSubmit} noValidate>
-            {/* Email field */}
+            {/* Username field */}
             <div className="auth-field">
-              <label htmlFor="login-email">Email address</label>
+              <label htmlFor="login-username">Username</label>
               <div className="auth-input-wrap">
-                <span className="auth-input-icon">
-                  <Mail size={17} />
-                </span>
+                <span className="auth-input-icon"><AtSign size={17} /></span>
                 <input
-                  type="email"
-                  id="login-email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
+                  type="text"
+                  id="login-username"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  spellCheck={false}
                 />
               </div>
             </div>
 
             {/* Password field */}
             <div className="auth-field">
-              <div className="auth-field-row">
-                <label htmlFor="login-password">Password</label>
-                <Link to="/register" className="auth-forgot-link">
-                  New here? Register
-                </Link>
-              </div>
+              <label htmlFor="login-password">Password</label>
               <div className="auth-input-wrap">
-                <span className="auth-input-icon">
-                  <LockKeyhole size={17} />
-                </span>
+                <span className="auth-input-icon"><LockKeyhole size={17} /></span>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="login-password"
@@ -237,9 +217,7 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="auth-divider">
-            <span>or</span>
-          </div>
+          <div className="auth-divider"><span>or</span></div>
 
           <div className="auth-switch">
             Don&apos;t have an account?{' '}

@@ -440,20 +440,13 @@ const Dashboard = () => {
   const handleCreateGroup = async (event) => {
     event.preventDefault();
 
-    if ((!newRoomName || newRoomName.trim() === '') && selectedUsers.length === 1) {
-      const targetUserId = selectedUsers[0];
-      const first = userInfo.id;
-      const second = targetUserId;
-      const roomName = first < second ? `${first}_${second}` : `${second}_${first}`;
-
-      setShowGroupModal(false);
-      setSelectedUsers([]);
-      openConversation(roomName);
+    if (!newRoomName || newRoomName.trim() === '') {
+      alert('Please enter a group name.');
       return;
     }
 
-    if (!newRoomName || newRoomName.trim() === '') {
-      alert('Provide a group name or select exactly one person.');
+    if (selectedUsers.length === 0) {
+      alert('Please select at least one contact to add to the group.');
       return;
     }
 
@@ -638,7 +631,7 @@ const Dashboard = () => {
         <button
           type="button"
           onClick={() => setShowGroupModal(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-500/30 transition hover:scale-[1.03]"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white transition hover:scale-[1.03]"
           title="New chat or group"
         >
           <CirclePlus className="h-5 w-5" />
@@ -882,7 +875,7 @@ const Dashboard = () => {
 
       <aside className="relative z-20 hidden w-24 shrink-0 flex-col items-center justify-between overflow-visible border-r border-white/50 px-4 py-6 backdrop-blur-xl dark:border-white/10 md:flex">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-900">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900">
             <Sparkles className="h-6 w-6" />
           </div>
           {desktopSections.map((section) => (
@@ -1026,27 +1019,32 @@ const Dashboard = () => {
 
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <label className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                   Group name
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   autoFocus
+                  required
                   type="text"
                   value={newRoomName}
                   onChange={(event) => setNewRoomName(event.target.value)}
-                  placeholder="Leave blank and select one person for a direct chat"
+                  placeholder="e.g. Team Alpha, Weekend Plans…"
                   className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
                 />
               </div>
 
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Members
+                  Members — your contacts
                 </label>
                 <div className="max-h-72 space-y-2 overflow-y-auto rounded-2xl border border-white/60 bg-white/60 p-2 dark:border-white/10 dark:bg-slate-900/50">
-                  {usersForModal
-                    .filter((user) => user.id !== userInfo.id)
-                    .map((user) => {
+                  {contacts.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                      No contacts yet. Add people from the Contacts tab first.
+                    </div>
+                  ) : (
+                    contacts.map((user) => {
                       const selected = selectedUsers.includes(user.id);
                       return (
                         <label
@@ -1078,7 +1076,8 @@ const Dashboard = () => {
                           </div>
                         </label>
                       );
-                    })}
+                    })
+                  )}
                 </div>
               </div>
 
