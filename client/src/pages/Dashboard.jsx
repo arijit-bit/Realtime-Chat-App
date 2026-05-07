@@ -180,6 +180,7 @@ const Dashboard = () => {
   const [editUsername, setEditUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [activeChatName, setActiveChatName] = useState('');
   const activeRoomRef = useRef(activeRoom);
 
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
@@ -434,6 +435,7 @@ const Dashboard = () => {
     const first = userInfo.id;
     const second = contactUser.id;
     const roomName = first < second ? `${first}_${second}` : `${second}_${first}`;
+    setActiveChatName(contactUser.username);
     openConversation(roomName);
   };
 
@@ -944,6 +946,7 @@ const Dashboard = () => {
           onAddContact={handleAddContact}
           onBack={() => setShowMobileChat(false)}
           conversationMeta={activeConversation}
+          contactName={activeChatName}
         />
       </main>
 

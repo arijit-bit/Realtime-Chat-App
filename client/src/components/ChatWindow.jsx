@@ -84,6 +84,7 @@ const ChatWindow = ({
   onAddContact,
   onBack,
   conversationMeta,
+  contactName,
 }) => {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState('');
@@ -104,6 +105,10 @@ const ChatWindow = ({
   const scrollContainerRef = useRef(null);
   const shouldStickToBottomRef = useRef(true);
   const senderInfoRef = useRef(senderInfo);
+  const inputRef = useRef(null);
+
+  // Resolved display name: prefer conversation name → contactName prop → roomId
+  const displayName = conversationMeta?.name || contactName || roomName || roomId;
 
   const otherPersonInContacts = !isGroupChat && targetUserId
     ? contacts.some((contact) => normalizeId(contact.id) === normalizeId(targetUserId))
@@ -260,6 +265,12 @@ const ChatWindow = ({
       socket.off('user_stop_typing', stopTypingHandler);
     };
   }, [currentUser.id, currentUser.username, isGroupChat, roomId, socket]);
+
+  // Auto-focus input whenever room changes
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 80);
+    return () => clearTimeout(timer);
+  }, [roomId]);
 
   useEffect(() => {
     if (isLoadingMore || !shouldStickToBottomRef.current) return;
@@ -497,7 +508,7 @@ const ChatWindow = ({
               )}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold text-slate-900 dark:text-white">{roomName || roomId}</p>
+              <p className="truncate text-[15px] font-semibold text-slate-900 dark:text-white">{displayName}</p>
               <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
                 {isGroupChat ? 'Group conversation' : conversationMeta?.onlineStatus ? 'Online now' : 'Direct conversation'}
               </p>
@@ -696,6 +707,7 @@ const ChatWindow = ({
             </button>
 
             <input
+              ref={inputRef}
               type="text"
               value={currentMessage}
               onChange={handleTyping}
