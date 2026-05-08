@@ -85,6 +85,37 @@ const writeSessionCache = (key, value) => {
   }
 };
 
+const getAutoPilotStorageKey = (userId) => `autopilot_settings_${userId}`;
+
+const readAutoPilotStorage = (userId) => {
+  try {
+    const rawValue = localStorage.getItem(getAutoPilotStorageKey(userId));
+    if (!rawValue) return null;
+
+    const parsed = JSON.parse(rawValue);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    return {
+      enabled: Boolean(parsed.enabled),
+      scope: parsed.scope === 'selected' ? 'selected' : 'all',
+      selectedContactIds: Array.isArray(parsed.selectedContactIds) ? parsed.selectedContactIds : [],
+    };
+  } catch (error) {
+    console.error('Failed to read auto pilot settings from local storage', error);
+    return null;
+  }
+};
+
+const writeAutoPilotStorage = (userId, value) => {
+  try {
+    localStorage.setItem(getAutoPilotStorageKey(userId), JSON.stringify(value));
+  } catch (error) {
+    console.error('Failed to write auto pilot settings to local storage', error);
+  }
+};
+
 const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
   const classes =
     tone === 'emerald'
@@ -202,6 +233,14 @@ const Dashboard = () => {
 
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
+  const normalizeAutoPilotSettings = useCallback((settings) => ({
+    enabled: Boolean(settings?.enabled),
+    scope: settings?.scope === 'selected' ? 'selected' : 'all',
+    selectedContactIds: settings?.scope === 'all'
+      ? contacts.map((contact) => contact.id)
+      : Array.isArray(settings?.selectedContactIds) ? settings.selectedContactIds : [],
+  }), [contacts]);
+
   const fetchAutoPilotSettings = useCallback(async (userId) => {
     try {
       const response = await fetch(`${API_URL}/api/users/${userId}/autopilot`);
@@ -211,19 +250,14 @@ const Dashboard = () => {
         throw new Error(data.message || 'Failed to load auto pilot settings');
       }
 
-      setAutoPilotSettings({
-        enabled: Boolean(data.enabled),
-        scope: data.scope === 'selected' ? 'selected' : 'all',
-        selectedContactIds: data.scope === 'all'
-          ? contacts.map((contact) => contact.id)
-          : Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
-      });
+      const localSettings = readAutoPilotStorage(userId);
+      setAutoPilotSettings(normalizeAutoPilotSettings(localSettings || data));
     } catch (error) {
       console.error('Error fetching auto pilot settings:', error);
     } finally {
       setHasLoadedAutoPilotSettings(true);
     }
-  }, [contacts]);
+  }, [normalizeAutoPilotSettings]);
 
   useEffect(() => {
     activeRoomRef.current = activeRoom;
@@ -253,6 +287,19 @@ const Dashboard = () => {
 
     const parsedUser = JSON.parse(storedUser);
     setUserInfo(parsedUser);
+
+    const localAutoPilotSettings = readAutoPilotStorage(parsedUser.id);
+    if (localAutoPilotSettings) {
+      setAutoPilotSettings(localAutoPilotSettings);
+      setHasLoadedAutoPilotSettings(true);
+    } else {
+      setAutoPilotSettings({
+        enabled: false,
+        scope: 'all',
+        selectedContactIds: [],
+      });
+      setHasLoadedAutoPilotSettings(false);
+    }
 
     const cachedConversations = readSessionCache(`conversations_${parsedUser.id}`);
     if (cachedConversations) {
@@ -326,6 +373,14 @@ const Dashboard = () => {
       writeSessionCache(`contacts_${userInfo.id}`, contacts);
     }
   }, [contacts, userInfo]);
+
+  useEffect(() => {
+    if (!userInfo || !hasLoadedAutoPilotSettings) {
+      return;
+    }
+
+    writeAutoPilotStorage(userInfo.id, autoPilotSettings);
+  }, [autoPilotSettings, hasLoadedAutoPilotSettings, userInfo]);
 
   useEffect(() => {
     const isContactsView = activeSection === 'contacts' || mobileSection === 'contacts';
@@ -554,11 +609,7 @@ const Dashboard = () => {
       }
 
       setAutoPilotSettings({
-        enabled: Boolean(data.enabled),
-        scope: data.scope === 'selected' ? 'selected' : 'all',
-        selectedContactIds: data.scope === 'all'
-          ? contacts.map((contact) => contact.id)
-          : Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
+        ...normalizeAutoPilotSettings(data),
       });
       setAutoPilotMessage('Auto pilot settings saved.');
     } catch (error) {
