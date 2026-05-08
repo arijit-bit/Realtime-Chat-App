@@ -134,6 +134,14 @@ const emitConversationUpdate = (room, roomId, content, senderId) => {
   });
 };
 
+const emitAutoPilotTyping = (roomId, username) => {
+  io.to(roomId).emit('user_typing', { username, roomId });
+};
+
+const emitAutoPilotStopTyping = (roomId, username) => {
+  io.to(roomId).emit('user_stop_typing', { username, roomId });
+};
+
 const persistAndBroadcastMessage = async ({
   roomId,
   senderId,
@@ -246,20 +254,25 @@ const maybeSendAutoPilotReply = async ({
     latestMessage: `from ${senderName}: ${content}`,
   });
 
+  emitAutoPilotTyping(roomId, autoPilotUser.username);
+
   let reply;
   try {
     reply = await CallAPI(prompt, 'auto');
   } catch (error) {
+    emitAutoPilotStopTyping(roomId, autoPilotUser.username);
     console.error('Auto-pilot reply generation failed:', error.message);
     return;
   }
 
   const replyText = String(reply || '').trim();
   if (!replyText) {
+    emitAutoPilotStopTyping(roomId, autoPilotUser.username);
     return;
   }
 
   await delay(1200);
+  emitAutoPilotStopTyping(roomId, autoPilotUser.username);
 
   await persistAndBroadcastMessage({
     roomId,
