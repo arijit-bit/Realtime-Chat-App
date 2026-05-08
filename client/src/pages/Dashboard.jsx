@@ -202,6 +202,29 @@ const Dashboard = () => {
 
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
+  const fetchAutoPilotSettings = useCallback(async (userId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userId}/autopilot`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load auto pilot settings');
+      }
+
+      setAutoPilotSettings({
+        enabled: Boolean(data.enabled),
+        scope: data.scope === 'selected' ? 'selected' : 'all',
+        selectedContactIds: data.scope === 'all'
+          ? contacts.map((contact) => contact.id)
+          : Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
+      });
+    } catch (error) {
+      console.error('Error fetching auto pilot settings:', error);
+    } finally {
+      setHasLoadedAutoPilotSettings(true);
+    }
+  }, [contacts]);
+
   useEffect(() => {
     activeRoomRef.current = activeRoom;
   }, [activeRoom]);
@@ -487,29 +510,6 @@ const Dashboard = () => {
       console.error(error);
     }
   };
-
-  const fetchAutoPilotSettings = useCallback(async (userId) => {
-    try {
-      const response = await fetch(`${API_URL}/api/users/${userId}/autopilot`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to load auto pilot settings');
-      }
-
-      setAutoPilotSettings({
-        enabled: Boolean(data.enabled),
-        scope: data.scope === 'selected' ? 'selected' : 'all',
-        selectedContactIds: data.scope === 'all'
-          ? contacts.map((contact) => contact.id)
-          : Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
-      });
-    } catch (error) {
-      console.error('Error fetching auto pilot settings:', error);
-    } finally {
-      setHasLoadedAutoPilotSettings(true);
-    }
-  }, [contacts]);
 
   const openAutoPilotModal = () => {
     setAutoPilotMessage('');
