@@ -30,6 +30,21 @@ const userSchema = new mongoose.Schema({
     contacts: {
         type: [String], // array of contact emails
         default: []
+    },
+    autoPilot: {
+        enabled: {
+            type: Boolean,
+            default: false
+        },
+        scope: {
+            type: String,
+            enum: ['all', 'selected'],
+            default: 'all'
+        },
+        selectedContacts: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }]
     }
 }, {
     timestamps: true // Automatically creates 'createdAt' and 'updatedAt'

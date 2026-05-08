@@ -1,5 +1,11 @@
 const User = require('../models/User');
 
+const formatAutoPilotSettings = (user) => ({
+    enabled: Boolean(user.autoPilot?.enabled),
+    scope: user.autoPilot?.scope || 'all',
+    selectedContactIds: (user.autoPilot?.selectedContacts || []).map((contactId) => contactId.toString())
+});
+
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}).select('-password');
@@ -172,4 +178,69 @@ const updateProfile = async (req, res) => {
     }
 };
 
-module.exports = { getAllUsers, searchUsers, getUserContacts, addContact, updateProfile };
+const getAutoPilotSettings = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('autoPilot');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(formatAutoPilotSettings(user));
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const updateAutoPilotSettings = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { enabled, scope, selectedContactIds = [] } = req.body;
+
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ message: 'enabled must be a boolean' });
+        }
+
+        if (!['all', 'selected'].includes(scope)) {
+            return res.status(400).json({ message: 'scope must be either "all" or "selected"' });
+        }
+
+        if (!Array.isArray(selectedContactIds)) {
+            return res.status(400).json({ message: 'selectedContactIds must be an array' });
+        }
+
+        const user = await User.findById(userId).select('autoPilot');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const normalizedSelectedContacts = [
+            ...new Set(
+                selectedContactIds
+                    .map((contactId) => String(contactId || '').trim())
+                    .filter((contactId) => contactId && contactId !== userId)
+            )
+        ];
+
+        user.autoPilot = {
+            enabled,
+            scope,
+            selectedContacts: scope === 'selected' ? normalizedSelectedContacts : []
+        };
+
+        await user.save();
+
+        res.json(formatAutoPilotSettings(user));
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+module.exports = {
+    getAllUsers,
+    searchUsers,
+    getUserContacts,
+    addContact,
+    updateProfile,
+    getAutoPilotSettings,
+    updateAutoPilotSettings
+};

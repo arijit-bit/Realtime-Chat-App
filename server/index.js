@@ -5,8 +5,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const { CallAPI } = require('./utils/llm-api');
 
-// Connect to MongoDB
+const Message = require('./models/Message');
+const ChatRoom = require('./models/ChatRoom');
+const User = require('./models/User');
+
 connectDB();
 
 const app = express();
@@ -18,40 +22,242 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: allowedOrigins,
-  credentials: true
+  credentials: true,
 }));
 
 app.use(express.json());
 
-// Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/conversations', require('./routes/conversationRoutes'));
 app.use('/api/bot', require('./routes/botRoutes'));
-
-const Message = require('./models/Message');
-const ChatRoom = require('./models/ChatRoom');
-const User = require('./models/User');
+app.use('/api/system', require('./routes/systemRoutes'));
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
-    credentials: true
-  }
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 });
 
 const userSocketMap = new Map();
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isDirectMessageRoom = (roomName = '') => {
+  const parts = String(roomName).split('_');
+  return parts.length === 2 && parts.every(Boolean);
+};
+
+const getDirectParticipants = (roomName = '') => (
+  isDirectMessageRoom(roomName) ? String(roomName).split('_') : []
+);
+
+const getRecipientIdForRoom = (roomName, senderId) => (
+  getDirectParticipants(roomName).find((participantId) => participantId !== String(senderId)) || null
+);
+
+const ensureRoomExists = async (roomName) => {
+  let room = await ChatRoom.findOne({ roomName });
+  if (room) {
+    return room;
+  }
+
+  const directParticipants = getDirectParticipants(roomName);
+
+  room = await ChatRoom.create({
+    roomName,
+    isGroupChat: !isDirectMessageRoom(roomName),
+    members: directParticipants,
+  });
+
+  return room;
+};
+
+const addRecipientToContacts = async (senderId, recipientId) => {
+  if (!recipientId) {
+    return;
+  }
+
+  try {
+    const recipient = await User.findById(recipientId).select('email');
+    if (!recipient) {
+      return;
+    }
+
+    await User.findByIdAndUpdate(
+      senderId,
+      { $addToSet: { contacts: recipient.email } },
+    );
+  } catch (error) {
+    console.error('Auto-add contact error:', error.message);
+  }
+};
+
+const emitConversationUpdate = (room, roomId, content, senderId) => {
+  let memberIds = (room.members || []).map((member) => member.toString());
+
+  if (memberIds.length === 0 && isDirectMessageRoom(roomId)) {
+    memberIds = getDirectParticipants(roomId);
+  }
+
+  memberIds.forEach((memberId) => {
+    const memberSocketId = userSocketMap.get(memberId);
+    if (memberSocketId && memberId !== String(senderId)) {
+      io.to(memberSocketId).emit('new_conversation', {
+        roomId,
+        lastMessage: content,
+        senderId,
+      });
+    }
+  });
+};
+
+const persistAndBroadcastMessage = async ({
+  roomId,
+  senderId,
+  senderName,
+  content,
+  clientTempId,
+  isAutomated = false,
+}) => {
+  const room = await ensureRoomExists(roomId);
+  const recipientId = room.isGroupChat ? null : getRecipientIdForRoom(roomId, senderId);
+
+  const newMessage = await Message.create({
+    roomId: room._id,
+    senderId,
+    receiverId: recipientId || undefined,
+    content,
+    isAutomated,
+  });
+
+  const broadcastData = {
+    roomId,
+    senderId,
+    senderName,
+    content,
+    timestamp: newMessage.timestamp,
+    id: newMessage._id,
+    isRead: false,
+    clientTempId,
+    isAutomated,
+  };
+
+  io.to(roomId).emit('receive_message', broadcastData);
+
+  if (recipientId) {
+    await addRecipientToContacts(senderId, recipientId);
+  }
+
+  emitConversationUpdate(room, roomId, content, senderId);
+
+  return {
+    room,
+    recipientId,
+    newMessage,
+    broadcastData,
+  };
+};
+
+const buildAutoPilotPrompt = async ({ roomDbId, autoPilotUserId, latestMessage }) => {
+  const recentMessages = await Message.find({ roomId: roomDbId })
+    .populate('senderId', 'username')
+    .sort({ timestamp: -1 })
+    .limit(16);
+
+  const orderedMessages = recentMessages.reverse();
+  const previousMessages = orderedMessages.slice(0, -1).slice(-15);
+
+  const history = previousMessages.length > 0
+    ? previousMessages
+      .map((message) => {
+        const isYou = String(message.senderId?._id) === String(autoPilotUserId);
+        return `${isYou ? 'you' : (message.senderId?.username || 'person')}: ${message.content}`;
+      })
+      .join('\n')
+    : 'No earlier messages.';
+
+  return [
+    'Act as a chat bot.',
+    'Make a to-the-point response.',
+    'Act like a human.',
+    `These were previous messages:\n${history}`,
+    `Based on those conversations, reply to the latest message: ${latestMessage}`,
+  ].join('\n\n');
+};
+
+const maybeSendAutoPilotReply = async ({
+  room,
+  roomId,
+  senderId,
+  senderName,
+  content,
+  isAutomated,
+}) => {
+  if (room.isGroupChat || isAutomated || !isDirectMessageRoom(roomId)) {
+    return;
+  }
+
+  const autoPilotUserId = getRecipientIdForRoom(roomId, senderId);
+  if (!autoPilotUserId) {
+    return;
+  }
+
+  const autoPilotUser = await User.findById(autoPilotUserId).select('username autoPilot');
+  if (!autoPilotUser || !autoPilotUser.autoPilot?.enabled) {
+    return;
+  }
+
+  if (autoPilotUser.autoPilot.scope === 'selected') {
+    const selectedIds = (autoPilotUser.autoPilot.selectedContacts || [])
+      .map((contactId) => contactId.toString());
+
+    if (!selectedIds.includes(String(senderId))) {
+      return;
+    }
+  }
+
+  const prompt = await buildAutoPilotPrompt({
+    roomDbId: room._id,
+    autoPilotUserId,
+    latestMessage: `from ${senderName}: ${content}`,
+  });
+
+  let reply;
+  try {
+    reply = await CallAPI(prompt, 'auto');
+  } catch (error) {
+    console.error('Auto-pilot reply generation failed:', error.message);
+    return;
+  }
+
+  const replyText = String(reply || '').trim();
+  if (!replyText) {
+    return;
+  }
+
+  await delay(1200);
+
+  await persistAndBroadcastMessage({
+    roomId,
+    senderId: autoPilotUserId,
+    senderName: autoPilotUser.username,
+    content: replyText,
+    isAutomated: true,
+  });
+};
 
 io.on('connection', (socket) => {
   const userId = socket.handshake.query.userId;
   console.log('User connected:', socket.id, 'UserId:', userId);
 
-  if (userId && userId !== "undefined") {
+  if (userId && userId !== 'undefined') {
     userSocketMap.set(userId, socket.id);
     io.emit('user_status_changed', { userId, status: 'online' });
   }
@@ -62,72 +268,23 @@ io.on('connection', (socket) => {
 
   socket.on('send_message', async (data) => {
     try {
-      let room = await ChatRoom.findOne({ roomName: data.roomId });
-
-      if (!room) {
-        room = await ChatRoom.create({
-          roomName: data.roomId,
-          isGroupChat: true
-        });
-      }
-
-      const newMessage = await Message.create({
-        roomId: room._id,
+      const { room } = await persistAndBroadcastMessage({
+        roomId: data.roomId,
         senderId: data.senderId,
-        content: data.content
+        senderName: data.senderName,
+        content: data.content,
+        clientTempId: data.clientTempId,
+        isAutomated: Boolean(data.isAutomated),
       });
 
-      const broadcastData = { ...data, id: newMessage._id, isRead: false };
-
-      // Broadcast message to anyone already in the socket room
-      io.to(data.roomId).emit('receive_message', broadcastData);
-
-      // ── Auto-add recipient to sender's contacts for DMs ─────────────────
-      // DM room name format: "smallerId_largerId"
-      if (data.roomId.includes('_') && !room.isGroupChat) {
-        const parts = data.roomId.split('_');
-        if (parts.length === 2) {
-          const recipientId = parts.find(id => id !== data.senderId);
-          if (recipientId) {
-            try {
-              // Find recipient to get their email
-              const recipient = await User.findById(recipientId).select('email');
-              if (recipient) {
-                // Add recipient's email to sender's contacts (no-op if already there)
-                await User.findByIdAndUpdate(
-                  data.senderId,
-                  { $addToSet: { contacts: recipient.email } }
-                );
-              }
-            } catch (e) {
-              console.error('Auto-add contact error:', e.message);
-            }
-          }
-        }
-      }
-
-      // For 1-1 DMs: derive both user IDs from the room name (format: "id1_id2")
-      // For group rooms: members are stored on the ChatRoom document
-      // Either way, emit new_conversation to ALL members' sockets so their
-      // sidebars update instantly — even if they haven't joined this socket room yet.
-      let memberIds = room.members.map(m => m.toString());
-
-      // If it's a DM room (no members stored), derive from room name
-      if (memberIds.length === 0 && data.roomId.includes('_')) {
-        memberIds = data.roomId.split('_');
-      }
-
-      memberIds.forEach(memberId => {
-        const memberSocketId = userSocketMap.get(memberId);
-        if (memberSocketId && memberId !== data.senderId) {
-          io.to(memberSocketId).emit('new_conversation', {
-            roomId: data.roomId,
-            lastMessage: data.content,
-            senderId: data.senderId
-          });
-        }
+      void maybeSendAutoPilotReply({
+        room,
+        roomId: data.roomId,
+        senderId: data.senderId,
+        senderName: data.senderName,
+        content: data.content,
+        isAutomated: Boolean(data.isAutomated),
       });
-
     } catch (error) {
       console.error('Error saving message payload:', error);
     }
@@ -139,7 +296,7 @@ io.on('connection', (socket) => {
       if (room) {
         await Message.updateMany(
           { roomId: room._id, senderId: { $ne: data.readerId }, isRead: false },
-          { $set: { isRead: true } }
+          { $set: { isRead: true } },
         );
         io.to(data.roomId).emit('read_status_updated', { roomId: data.roomId, readerId: data.readerId });
       }
@@ -159,7 +316,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
 
-    if (userId && userId !== "undefined") {
+    if (userId && userId !== 'undefined') {
       userSocketMap.delete(userId);
       io.emit('user_status_changed', { userId, status: 'offline' });
     }

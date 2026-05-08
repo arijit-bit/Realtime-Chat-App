@@ -33,6 +33,7 @@ const getMessages = async (req, res) => {
             senderName: msg.senderId ? msg.senderId.username : 'Unknown',
             content: msg.content,
             timestamp: msg.timestamp,
+            isAutomated: Boolean(msg.isAutomated),
             isRead: msg.isRead
         }));
 

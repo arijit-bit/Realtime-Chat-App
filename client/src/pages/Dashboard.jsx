@@ -26,6 +26,7 @@ const desktopSections = [
 
 const mobileSections = [
   { id: 'chats', label: 'Chats', icon: MessageSquare },
+  { id: 'contacts', label: 'Contacts', icon: ContactRound },
   { id: 'calls', label: 'Calls', icon: Phone },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
@@ -110,41 +111,49 @@ const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
   );
 };
 
-const DesktopNavButton = ({ active, icon: Icon, label, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    title={label}
-    className={`group relative flex h-11 w-11 items-center justify-center rounded-xl border transition ${
-      active
-        ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
-        : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
-    }`}
-  >
-    {active && (
-      <span className="absolute -left-5 h-7 w-1 rounded-full bg-slate-900 dark:bg-white" />
-    )}
-    <Icon className="h-5 w-5" />
-    <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
-      {label}
-    </span>
-  </button>
-);
+const DesktopNavButton = ({ active, icon, label, onClick }) => {
+  const Icon = icon;
 
-const MobileNavButton = ({ active, icon: Icon, label, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
-      active
-        ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
-        : 'text-slate-500 dark:text-slate-400'
-    }`}
-  >
-    <Icon className="h-5 w-5" />
-    <span>{label}</span>
-  </button>
-);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      className={`group relative flex h-11 w-11 items-center justify-center rounded-xl border transition ${
+        active
+          ? 'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white'
+          : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-slate-800/70 dark:hover:text-white'
+      }`}
+    >
+      {active && (
+        <span className="absolute -left-5 h-7 w-1 rounded-full bg-slate-900 dark:bg-white" />
+      )}
+      <Icon className="h-5 w-5" />
+      <span className="pointer-events-none absolute left-[calc(100%+12px)] z-50 hidden whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
+        {label}
+      </span>
+    </button>
+  );
+};
+
+const MobileNavButton = ({ active, icon, label, onClick }) => {
+  const Icon = icon;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
+        active
+          ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-800 dark:text-sky-300'
+          : 'text-slate-500 dark:text-slate-400'
+      }`}
+    >
+      <Icon className="h-5 w-5" />
+      <span>{label}</span>
+    </button>
+  );
+};
 
 const SettingRow = ({ label, hint, action }) => (
   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
@@ -173,12 +182,19 @@ const Dashboard = () => {
   const [contactSearchError, setContactSearchError] = useState('');
   const [isSearchingContact, setIsSearchingContact] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showAutoPilotModal, setShowAutoPilotModal] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
-  const [usersForModal, setUsersForModal] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAutoPilot, setIsSavingAutoPilot] = useState(false);
+  const [autoPilotMessage, setAutoPilotMessage] = useState('');
+  const [autoPilotSettings, setAutoPilotSettings] = useState({
+    enabled: false,
+    scope: 'all',
+    selectedContactIds: [],
+  });
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [activeChatName, setActiveChatName] = useState('');
   const activeRoomRef = useRef(activeRoom);
@@ -222,11 +238,6 @@ const Dashboard = () => {
     const cachedContacts = readSessionCache(`contacts_${parsedUser.id}`);
     if (cachedContacts) {
       setContacts(cachedContacts);
-    }
-
-    const cachedUsersForModal = readSessionCache('users_for_modal');
-    if (cachedUsersForModal) {
-      setUsersForModal(cachedUsersForModal);
     }
 
     const newSocket = io(API_URL, { query: { userId: parsedUser.id } });
@@ -275,6 +286,7 @@ const Dashboard = () => {
     fetchConversations(parsedUser.id);
     fetchUsersForModal();
     fetchUserContacts(parsedUser.id);
+    fetchAutoPilotSettings(parsedUser.id);
 
     return () => newSocket.disconnect();
   }, [navigate]);
@@ -369,7 +381,6 @@ const Dashboard = () => {
     try {
       const response = await fetch(`${API_URL}/api/users`);
       const data = await response.json();
-      setUsersForModal(data);
       writeSessionCache('users_for_modal', data);
     } catch (error) {
       console.error(error);
@@ -476,6 +487,76 @@ const Dashboard = () => {
     }
   };
 
+  const fetchAutoPilotSettings = async (userId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userId}/autopilot`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load auto pilot settings');
+      }
+
+      setAutoPilotSettings({
+        enabled: Boolean(data.enabled),
+        scope: data.scope === 'selected' ? 'selected' : 'all',
+        selectedContactIds: Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
+      });
+    } catch (error) {
+      console.error('Error fetching auto pilot settings:', error);
+    }
+  };
+
+  const openAutoPilotModal = () => {
+    setAutoPilotMessage('');
+    setShowAutoPilotModal(true);
+  };
+
+  const toggleAutoPilotContact = (contactId) => {
+    setAutoPilotSettings((prev) => {
+      const alreadySelected = prev.selectedContactIds.includes(contactId);
+      return {
+        ...prev,
+        scope: 'selected',
+        selectedContactIds: alreadySelected
+          ? prev.selectedContactIds.filter((id) => id !== contactId)
+          : [...prev.selectedContactIds, contactId],
+      };
+    });
+  };
+
+  const handleSaveAutoPilot = async (event) => {
+    event.preventDefault();
+    if (!userInfo) return;
+
+    setIsSavingAutoPilot(true);
+    setAutoPilotMessage('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userInfo.id}/autopilot`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(autoPilotSettings),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to save auto pilot settings');
+      }
+
+      setAutoPilotSettings({
+        enabled: Boolean(data.enabled),
+        scope: data.scope === 'selected' ? 'selected' : 'all',
+        selectedContactIds: Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
+      });
+      setAutoPilotMessage('Auto pilot settings saved.');
+    } catch (error) {
+      console.error(error);
+      setAutoPilotMessage(error.message || 'Could not save auto pilot settings.');
+    } finally {
+      setIsSavingAutoPilot(false);
+    }
+  };
+
   const handleSaveProfile = async (event) => {
     event.preventDefault();
     if (!editUsername.trim()) return;
@@ -516,6 +597,13 @@ const Dashboard = () => {
     () => conversations.find((conversation) => conversation.id === activeRoom),
     [activeRoom, conversations],
   );
+
+  const autoPilotSelectedCount = autoPilotSettings.selectedContactIds.length;
+  const autoPilotSummary = autoPilotSettings.enabled
+    ? autoPilotSettings.scope === 'all'
+      ? 'Auto pilot is active for all direct contacts.'
+      : `Auto pilot is active for ${autoPilotSelectedCount} selected contact${autoPilotSelectedCount === 1 ? '' : 's'}.`
+    : 'Auto pilot is currently turned off.';
 
   const directChats = useMemo(
     () => conversations.filter((conversation) => !conversation.isGroup),
@@ -630,14 +718,35 @@ const Dashboard = () => {
             {userInfo?.username || 'Workspace'}
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowGroupModal(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white transition hover:scale-[1.03]"
-          title="New chat or group"
-        >
-          <CirclePlus className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openAutoPilotModal}
+            className={`relative flex h-10 w-10 items-center justify-center rounded-xl text-white transition hover:scale-[1.03] ${
+              autoPilotSettings.enabled
+                ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
+                : 'bg-gradient-to-br from-slate-700 to-slate-900 dark:from-slate-200 dark:to-white dark:text-slate-900'
+            }`}
+            title="Auto pilot"
+          >
+            <Sparkles className="h-5 w-5" />
+            {autoPilotSettings.enabled && (
+              <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-300 dark:border-slate-900" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowGroupModal(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white transition hover:scale-[1.03]"
+            title="New chat or group"
+          >
+            <CirclePlus className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-[28px] border border-white/60 bg-white/65 px-4 py-3 text-sm text-slate-600 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/55 dark:text-slate-300">
+        {autoPilotSummary}
       </div>
 
       <div className="glass-panel mt-4 p-3">
@@ -857,9 +966,11 @@ const Dashboard = () => {
   );
 
   const renderSidebarPane = () => {
-    if (activeSection === 'contacts' || mobileSection === 'contacts') return renderContactsPane();
-    if (activeSection === 'calls' || mobileSection === 'calls') return renderCallsPane();
     if (mobileSection === 'settings') return renderSettingsContent();
+    if (mobileSection === 'contacts') return renderContactsPane();
+    if (mobileSection === 'calls') return renderCallsPane();
+    if (activeSection === 'contacts') return renderContactsPane();
+    if (activeSection === 'calls') return renderCallsPane();
     return renderChatsPane();
   };
 
@@ -877,9 +988,21 @@ const Dashboard = () => {
 
       <aside className="relative z-20 hidden w-24 shrink-0 flex-col items-center justify-between overflow-visible border-r border-white/50 px-4 py-6 backdrop-blur-xl dark:border-white/10 md:flex">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+          <button
+            type="button"
+            onClick={openAutoPilotModal}
+            title="Auto pilot"
+            className={`relative flex h-12 w-12 items-center justify-center rounded-xl text-white transition hover:scale-[1.03] ${
+              autoPilotSettings.enabled
+                ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
+                : 'bg-slate-900 dark:bg-white dark:text-slate-900'
+            }`}
+          >
             <Sparkles className="h-6 w-6" />
-          </div>
+            {autoPilotSettings.enabled && (
+              <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-300 dark:border-slate-900" />
+            )}
+          </button>
           {desktopSections.map((section) => (
             <DesktopNavButton
               key={section.id}
@@ -964,12 +1087,16 @@ const Dashboard = () => {
                   if (section.id === 'chats') {
                     setActiveSection('chats');
                   }
+                  if (section.id === 'contacts') {
+                    setActiveSection('contacts');
+                  }
                   if (section.id === 'calls') {
                     setActiveSection('calls');
                   }
                   if (section.id === 'settings') {
                     setEditUsername(userInfo.username);
                   }
+                  setShowMobileChat(false);
                   setSearchTerm('');
                 }}
               />
@@ -997,6 +1124,190 @@ const Dashboard = () => {
               </button>
             </div>
             {renderSettingsContent()}
+          </div>
+        </div>
+      )}
+
+      {showAutoPilotModal && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.84))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.84))]">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                  Auto pilot
+                </p>
+                <h3 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
+                  Automatic direct-message replies
+                </h3>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  Watch new incoming personal messages, send the latest 15 chat lines to the API, and reply with the generated answer.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAutoPilotModal(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-500 transition hover:text-slate-900 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAutoPilot} className="space-y-4">
+              <div className="rounded-[24px] border border-white/60 bg-white/75 p-4 shadow-sm shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900/55">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Enable auto pilot</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      When a new direct message arrives, NeoChat can generate and send a reply for you.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAutoPilotSettings((prev) => ({
+                        ...prev,
+                        enabled: !prev.enabled,
+                      }))
+                    }
+                    className={`flex h-10 w-16 items-center rounded-full p-1 transition ${
+                      autoPilotSettings.enabled ? 'bg-emerald-500/80' : 'bg-slate-200 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow transition ${
+                        autoPilotSettings.enabled ? 'translate-x-6' : ''
+                      }`}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className={`rounded-[24px] border px-4 py-4 transition ${
+                  autoPilotSettings.scope === 'all'
+                    ? 'border-emerald-300 bg-emerald-50/80 dark:border-emerald-500/30 dark:bg-emerald-500/10'
+                    : 'border-white/60 bg-white/75 dark:border-white/10 dark:bg-slate-900/55'
+                }`}>
+                  <input
+                    type="radio"
+                    name="autopilot-scope"
+                    className="sr-only"
+                    checked={autoPilotSettings.scope === 'all'}
+                    onChange={() =>
+                      setAutoPilotSettings((prev) => ({
+                        ...prev,
+                        scope: 'all',
+                      }))
+                    }
+                  />
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">All contacts</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Reply to every incoming direct message automatically.
+                  </p>
+                </label>
+
+                <label className={`rounded-[24px] border px-4 py-4 transition ${
+                  autoPilotSettings.scope === 'selected'
+                    ? 'border-sky-300 bg-sky-50/80 dark:border-sky-500/30 dark:bg-sky-500/10'
+                    : 'border-white/60 bg-white/75 dark:border-white/10 dark:bg-slate-900/55'
+                }`}>
+                  <input
+                    type="radio"
+                    name="autopilot-scope"
+                    className="sr-only"
+                    checked={autoPilotSettings.scope === 'selected'}
+                    onChange={() =>
+                      setAutoPilotSettings((prev) => ({
+                        ...prev,
+                        scope: 'selected',
+                      }))
+                    }
+                  />
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Selected contacts</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Only reply for the people you pick below.
+                  </p>
+                </label>
+              </div>
+
+              <div className="rounded-[24px] border border-white/60 bg-white/75 p-4 shadow-sm shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900/55">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Specific contacts</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      These apply when Selected contacts is active.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-slate-900">
+                    {autoPilotSelectedCount} selected
+                  </span>
+                </div>
+
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {contacts.length === 0 ? (
+                    <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                      Add contacts first to target specific people.
+                    </div>
+                  ) : (
+                    contacts.map((contact) => {
+                      const selected = autoPilotSettings.selectedContactIds.includes(contact.id);
+
+                      return (
+                        <label
+                          key={contact.id}
+                          className={`flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-3 transition ${
+                            selected
+                              ? 'bg-sky-500/10 ring-1 ring-sky-500/20'
+                              : 'bg-slate-50 hover:bg-white dark:bg-slate-950/50 dark:hover:bg-slate-900'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => toggleAutoPilotContact(contact.id)}
+                            className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                          />
+                          <Avatar name={contact.username} online={contact.onlineStatus} tone="emerald" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                              {contact.username}
+                            </p>
+                            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                              {contact.email}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {autoPilotMessage && (
+                <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  {autoPilotMessage}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAutoPilotModal(false)}
+                  className="flex-1 rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white dark:bg-slate-900/70 dark:text-slate-200"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingAutoPilot}
+                  className="flex-1 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                >
+                  {isSavingAutoPilot ? 'Saving...' : 'Save auto pilot'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
