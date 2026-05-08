@@ -625,7 +625,7 @@ const ChatWindow = ({
                 <React.Fragment key={message.id}>
                   {message.showDate && (
                     <div className="sticky top-4 z-10 flex justify-center py-3">
-                      <span className="rounded-full border border-white/60 bg-white/75 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/75 dark:text-slate-300">
+                      <span className="inline-flex min-w-[140px] justify-center rounded-full border border-white/60 bg-white/75 px-4 py-1 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/75 dark:text-slate-300 sm:min-w-[168px]">
                         {formatDateLabel(message.timestamp)}
                       </span>
                     </div>
