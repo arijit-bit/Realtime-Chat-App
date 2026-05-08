@@ -236,10 +236,8 @@ const Dashboard = () => {
   const normalizeAutoPilotSettings = useCallback((settings) => ({
     enabled: Boolean(settings?.enabled),
     scope: settings?.scope === 'selected' ? 'selected' : 'all',
-    selectedContactIds: settings?.scope === 'all'
-      ? contacts.map((contact) => contact.id)
-      : Array.isArray(settings?.selectedContactIds) ? settings.selectedContactIds : [],
-  }), [contacts]);
+    selectedContactIds: Array.isArray(settings?.selectedContactIds) ? settings.selectedContactIds : [],
+  }), []);
 
   const fetchAutoPilotSettings = useCallback(async (userId) => {
     try {
@@ -595,12 +593,7 @@ const Dashboard = () => {
       const response = await fetch(`${API_URL}/api/users/${userInfo.id}/autopilot`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...autoPilotSettings,
-          selectedContactIds: autoPilotSettings.scope === 'all'
-            ? contacts.map((contact) => contact.id)
-            : autoPilotSettings.selectedContactIds,
-        }),
+        body: JSON.stringify(autoPilotSettings),
       });
 
       const data = await response.json();
@@ -661,29 +654,16 @@ const Dashboard = () => {
     [activeRoom, conversations],
   );
 
-  useEffect(() => {
-    if (!hasLoadedAutoPilotSettings || autoPilotSettings.scope !== 'all') {
-      return;
-    }
+  const displayedAutoPilotSelectedContactIds = useMemo(
+    () => (
+      autoPilotSettings.scope === 'all'
+        ? contacts.map((contact) => contact.id)
+        : autoPilotSettings.selectedContactIds
+    ),
+    [autoPilotSettings.scope, autoPilotSettings.selectedContactIds, contacts],
+  );
 
-    setAutoPilotSettings((prev) => {
-      const allContactIds = contacts.map((contact) => contact.id);
-      const hasSameSelection =
-        allContactIds.length === prev.selectedContactIds.length &&
-        allContactIds.every((contactId) => prev.selectedContactIds.includes(contactId));
-
-      if (hasSameSelection) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        selectedContactIds: allContactIds,
-      };
-    });
-  }, [autoPilotSettings.scope, contacts, hasLoadedAutoPilotSettings]);
-
-  const autoPilotSelectedCount = autoPilotSettings.selectedContactIds.length;
+  const autoPilotSelectedCount = displayedAutoPilotSelectedContactIds.length;
   const autoPilotSummary = autoPilotSettings.enabled
     ? autoPilotSettings.scope === 'all'
       ? 'Auto pilot is active for all direct contacts.'
@@ -1309,7 +1289,6 @@ const Dashboard = () => {
                       setAutoPilotSettings((prev) => ({
                         ...prev,
                         scope: 'all',
-                        selectedContactIds: contacts.map((contact) => contact.id),
                       }))
                     }
                   />
@@ -1363,7 +1342,7 @@ const Dashboard = () => {
                     </div>
                   ) : (
                     contacts.map((contact) => {
-                      const selected = autoPilotSettings.selectedContactIds.includes(contact.id);
+                      const selected = displayedAutoPilotSelectedContactIds.includes(contact.id);
 
                       return (
                         <label
