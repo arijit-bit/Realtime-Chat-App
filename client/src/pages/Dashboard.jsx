@@ -235,6 +235,7 @@ const Dashboard = () => {
   const [conversationFilter, setConversationFilter] = useState('direct');
   const [activeRoom, setActiveRoom] = useState('Global Lounge');
   const [conversations, setConversations] = useState([]);
+  const [isConversationsLoading, setIsConversationsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [contacts, setContacts] = useState([]);
   const [savedContactResults, setSavedContactResults] = useState([]);
@@ -347,6 +348,7 @@ const Dashboard = () => {
     const cachedConversations = readSessionCache(`conversations_${parsedUser.id}`);
     if (cachedConversations) {
       setConversations(cachedConversations);
+      setIsConversationsLoading(false);
     }
 
     const cachedContacts = readSessionCache(`contacts_${parsedUser.id}`);
@@ -396,7 +398,7 @@ const Dashboard = () => {
           return updated;
         }
 
-        fetchConversations(parsedUser.id);
+        fetchConversations(parsedUser.id, false);
         return prev;
       });
 
@@ -413,10 +415,10 @@ const Dashboard = () => {
     });
 
     newSocket.on('new_conversation', () => {
-      fetchConversations(parsedUser.id);
+      fetchConversations(parsedUser.id, false);
     });
 
-    fetchConversations(parsedUser.id);
+    fetchConversations(parsedUser.id, !cachedConversations);
     fetchUsersForModal();
     fetchUserContacts(parsedUser.id);
     fetchAutoPilotSettings(parsedUser.id);
@@ -506,7 +508,11 @@ const Dashboard = () => {
     });
   };
 
-  const fetchConversations = async (userId) => {
+  const fetchConversations = async (userId, showLoader = false) => {
+    if (showLoader) {
+      setIsConversationsLoading(true);
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/conversations?userId=${userId}`);
       const data = await response.json();
@@ -523,6 +529,10 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      if (showLoader) {
+        setIsConversationsLoading(false);
+      }
     }
   };
 
@@ -987,8 +997,22 @@ const Dashboard = () => {
 
       <div className="mt-4 flex-1 overflow-y-auto pr-1">
         <div className="space-y-2.5">
-          {filteredConversations.map(renderConversationItem)}
-          {filteredConversations.length === 0 && (
+          {isConversationsLoading && (
+            <div className="glass-panel px-5 py-8 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/85 shadow-lg shadow-slate-950/10 dark:bg-slate-900/85">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+              </div>
+              <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">
+                Loading conversations
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Please wait while we fetch your direct messages and groups.
+              </p>
+            </div>
+          )}
+
+          {!isConversationsLoading && filteredConversations.map(renderConversationItem)}
+          {!isConversationsLoading && filteredConversations.length === 0 && (
             <div className="glass-panel px-5 py-8 text-center">
               <p className="text-sm font-semibold text-slate-900 dark:text-white">No conversations yet</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
