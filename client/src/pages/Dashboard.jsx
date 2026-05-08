@@ -1330,9 +1330,24 @@ const Dashboard = () => {
                       These apply when Selected contacts is active.
                     </p>
                   </div>
-                  <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-slate-900">
-                    {autoPilotSelectedCount} selected
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAutoPilotSettings((prev) => ({
+                          ...prev,
+                          scope: 'selected',
+                          selectedContactIds: [],
+                        }))
+                      }
+                      className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:bg-slate-900"
+                    >
+                      Deselect all
+                    </button>
+                    <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-slate-900">
+                      {autoPilotSelectedCount} selected
+                    </span>
+                  </div>
                 </div>
 
                 <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
