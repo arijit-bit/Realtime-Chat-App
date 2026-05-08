@@ -156,7 +156,7 @@ const MobileNavButton = ({ active, icon, label, onClick }) => {
 };
 
 const SettingRow = ({ label, hint, action }) => (
-  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+  <div className="flex flex-col gap-3 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <p className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
       {hint && <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
@@ -946,7 +946,7 @@ const Dashboard = () => {
         }
       />
 
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="submit"
           disabled={isSaving || !editUsername.trim()}
@@ -957,7 +957,7 @@ const Dashboard = () => {
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
+          className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 sm:min-w-[140px]"
         >
           Sign out
         </button>
@@ -1106,9 +1106,9 @@ const Dashboard = () => {
       )}
 
       {showSettingsModal && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.8))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
-            <div className="mb-4 flex items-center justify-between">
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-3 backdrop-blur-sm sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.8))] p-4 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
+            <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
                   Preferences
@@ -1123,23 +1123,25 @@ const Dashboard = () => {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            {renderSettingsContent()}
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              {renderSettingsContent()}
+            </div>
           </div>
         </div>
       )}
 
       {showAutoPilotModal && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.84))] p-5 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.84))]">
-            <div className="mb-5 flex items-center justify-between gap-4">
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-3 backdrop-blur-sm sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.84))] p-4 shadow-2xl shadow-slate-950/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.84))] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
+            <div className="mb-5 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
                   Auto pilot
                 </p>
-                <h3 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
+                <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white sm:text-xl">
                   Automatic direct-message replies
                 </h3>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
                   Watch new incoming personal messages, send the latest 15 chat lines to the API, and reply with the generated answer.
                 </p>
               </div>
@@ -1152,9 +1154,9 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveAutoPilot} className="space-y-4">
+            <form onSubmit={handleSaveAutoPilot} className="min-h-0 space-y-4 overflow-y-auto pr-1">
               <div className="rounded-[24px] border border-white/60 bg-white/75 p-4 shadow-sm shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900/55">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">Enable auto pilot</p>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -1233,7 +1235,7 @@ const Dashboard = () => {
               </div>
 
               <div className="rounded-[24px] border border-white/60 bg-white/75 p-4 shadow-sm shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900/55">
-                <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">Specific contacts</p>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -1291,7 +1293,7 @@ const Dashboard = () => {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => setShowAutoPilotModal(false)}
