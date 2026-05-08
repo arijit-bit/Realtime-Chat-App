@@ -85,37 +85,6 @@ const writeSessionCache = (key, value) => {
   }
 };
 
-const getAutoPilotStorageKey = (userId) => `autopilot_settings_${userId}`;
-
-const readAutoPilotStorage = (userId) => {
-  try {
-    const rawValue = localStorage.getItem(getAutoPilotStorageKey(userId));
-    if (!rawValue) return null;
-
-    const parsed = JSON.parse(rawValue);
-    if (!parsed || typeof parsed !== 'object') {
-      return null;
-    }
-
-    return {
-      enabled: Boolean(parsed.enabled),
-      scope: parsed.scope === 'selected' ? 'selected' : 'all',
-      selectedContactIds: Array.isArray(parsed.selectedContactIds) ? parsed.selectedContactIds : [],
-    };
-  } catch (error) {
-    console.error('Failed to read auto pilot settings from local storage', error);
-    return null;
-  }
-};
-
-const writeAutoPilotStorage = (userId, value) => {
-  try {
-    localStorage.setItem(getAutoPilotStorageKey(userId), JSON.stringify(value));
-  } catch (error) {
-    console.error('Failed to write auto pilot settings to local storage', error);
-  }
-};
-
 const getNotificationStorageKey = (userId) => `notification_settings_${userId}`;
 
 const readNotificationStorage = (userId) => {
@@ -262,6 +231,7 @@ const Dashboard = () => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [activeChatName, setActiveChatName] = useState('');
   const activeRoomRef = useRef(activeRoom);
+  const notificationSettingsRef = useRef(notificationSettings);
 
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
@@ -280,8 +250,7 @@ const Dashboard = () => {
         throw new Error(data.message || 'Failed to load auto pilot settings');
       }
 
-      const localSettings = readAutoPilotStorage(userId);
-      setAutoPilotSettings(normalizeAutoPilotSettings(localSettings || data));
+      setAutoPilotSettings(normalizeAutoPilotSettings(data));
     } catch (error) {
       console.error('Error fetching auto pilot settings:', error);
     } finally {
@@ -292,6 +261,10 @@ const Dashboard = () => {
   useEffect(() => {
     activeRoomRef.current = activeRoom;
   }, [activeRoom]);
+
+  useEffect(() => {
+    notificationSettingsRef.current = notificationSettings;
+  }, [notificationSettings]);
 
   useEffect(() => {
     const totalUnread = conversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
@@ -332,18 +305,12 @@ const Dashboard = () => {
         : 'Browser notifications are not supported on this device.',
     );
 
-    const localAutoPilotSettings = readAutoPilotStorage(parsedUser.id);
-    if (localAutoPilotSettings) {
-      setAutoPilotSettings(localAutoPilotSettings);
-      setHasLoadedAutoPilotSettings(true);
-    } else {
-      setAutoPilotSettings({
-        enabled: false,
-        scope: 'all',
-        selectedContactIds: [],
-      });
-      setHasLoadedAutoPilotSettings(false);
-    }
+    setAutoPilotSettings({
+      enabled: false,
+      scope: 'all',
+      selectedContactIds: [],
+    });
+    setHasLoadedAutoPilotSettings(false);
 
     const cachedConversations = readSessionCache(`conversations_${parsedUser.id}`);
     if (cachedConversations) {
@@ -372,7 +339,7 @@ const Dashboard = () => {
     newSocket.on('receive_message', (data) => {
       const shouldNotify =
         data.senderId !== parsedUser.id
-        && notificationSettings.enabled
+        && notificationSettingsRef.current.enabled
         && typeof window !== 'undefined'
         && 'Notification' in window
         && Notification.permission === 'granted'
@@ -424,7 +391,7 @@ const Dashboard = () => {
     fetchAutoPilotSettings(parsedUser.id);
 
     return () => newSocket.disconnect();
-  }, [fetchAutoPilotSettings, navigate, notificationSettings.enabled]);
+  }, [fetchAutoPilotSettings, navigate]);
 
   useEffect(() => {
     if (userInfo) {
@@ -437,14 +404,6 @@ const Dashboard = () => {
       writeSessionCache(`contacts_${userInfo.id}`, contacts);
     }
   }, [contacts, userInfo]);
-
-  useEffect(() => {
-    if (!userInfo || !hasLoadedAutoPilotSettings) {
-      return;
-    }
-
-    writeAutoPilotStorage(userInfo.id, autoPilotSettings);
-  }, [autoPilotSettings, hasLoadedAutoPilotSettings, userInfo]);
 
   useEffect(() => {
     if (!userInfo) {
