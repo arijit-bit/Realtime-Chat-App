@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
@@ -189,6 +189,7 @@ const Dashboard = () => {
   const [editUsername, setEditUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAutoPilot, setIsSavingAutoPilot] = useState(false);
+  const [hasLoadedAutoPilotSettings, setHasLoadedAutoPilotSettings] = useState(false);
   const [autoPilotMessage, setAutoPilotMessage] = useState('');
   const [autoPilotSettings, setAutoPilotSettings] = useState({
     enabled: false,
@@ -289,7 +290,7 @@ const Dashboard = () => {
     fetchAutoPilotSettings(parsedUser.id);
 
     return () => newSocket.disconnect();
-  }, [navigate]);
+  }, [fetchAutoPilotSettings, navigate]);
 
   useEffect(() => {
     if (userInfo) {
@@ -487,7 +488,7 @@ const Dashboard = () => {
     }
   };
 
-  const fetchAutoPilotSettings = async (userId) => {
+  const fetchAutoPilotSettings = useCallback(async (userId) => {
     try {
       const response = await fetch(`${API_URL}/api/users/${userId}/autopilot`);
       const data = await response.json();
@@ -499,12 +500,16 @@ const Dashboard = () => {
       setAutoPilotSettings({
         enabled: Boolean(data.enabled),
         scope: data.scope === 'selected' ? 'selected' : 'all',
-        selectedContactIds: Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
+        selectedContactIds: data.scope === 'all'
+          ? contacts.map((contact) => contact.id)
+          : Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
       });
     } catch (error) {
       console.error('Error fetching auto pilot settings:', error);
+    } finally {
+      setHasLoadedAutoPilotSettings(true);
     }
-  };
+  }, [contacts]);
 
   const openAutoPilotModal = () => {
     setAutoPilotMessage('');
@@ -535,7 +540,12 @@ const Dashboard = () => {
       const response = await fetch(`${API_URL}/api/users/${userInfo.id}/autopilot`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(autoPilotSettings),
+        body: JSON.stringify({
+          ...autoPilotSettings,
+          selectedContactIds: autoPilotSettings.scope === 'all'
+            ? contacts.map((contact) => contact.id)
+            : autoPilotSettings.selectedContactIds,
+        }),
       });
 
       const data = await response.json();
@@ -546,7 +556,9 @@ const Dashboard = () => {
       setAutoPilotSettings({
         enabled: Boolean(data.enabled),
         scope: data.scope === 'selected' ? 'selected' : 'all',
-        selectedContactIds: Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
+        selectedContactIds: data.scope === 'all'
+          ? contacts.map((contact) => contact.id)
+          : Array.isArray(data.selectedContactIds) ? data.selectedContactIds : [],
       });
       setAutoPilotMessage('Auto pilot settings saved.');
     } catch (error) {
@@ -598,6 +610,28 @@ const Dashboard = () => {
     [activeRoom, conversations],
   );
 
+  useEffect(() => {
+    if (!hasLoadedAutoPilotSettings || autoPilotSettings.scope !== 'all') {
+      return;
+    }
+
+    setAutoPilotSettings((prev) => {
+      const allContactIds = contacts.map((contact) => contact.id);
+      const hasSameSelection =
+        allContactIds.length === prev.selectedContactIds.length &&
+        allContactIds.every((contactId) => prev.selectedContactIds.includes(contactId));
+
+      if (hasSameSelection) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        selectedContactIds: allContactIds,
+      };
+    });
+  }, [autoPilotSettings.scope, contacts, hasLoadedAutoPilotSettings]);
+
   const autoPilotSelectedCount = autoPilotSettings.selectedContactIds.length;
   const autoPilotSummary = autoPilotSettings.enabled
     ? autoPilotSettings.scope === 'all'
@@ -631,7 +665,7 @@ const Dashboard = () => {
   }, [contacts, deferredSearch]);
 
   const isAutoPilotConversation = (conversation) => {
-    if (!autoPilotSettings.enabled || conversation.isGroup || !conversation.targetUserId) {
+    if (!hasLoadedAutoPilotSettings || !autoPilotSettings.enabled || conversation.isGroup || !conversation.targetUserId) {
       return false;
     }
 
@@ -1224,6 +1258,7 @@ const Dashboard = () => {
                       setAutoPilotSettings((prev) => ({
                         ...prev,
                         scope: 'all',
+                        selectedContactIds: contacts.map((contact) => contact.id),
                       }))
                     }
                   />
