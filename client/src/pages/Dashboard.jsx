@@ -116,6 +116,35 @@ const writeAutoPilotStorage = (userId, value) => {
   }
 };
 
+const getNotificationStorageKey = (userId) => `notification_settings_${userId}`;
+
+const readNotificationStorage = (userId) => {
+  try {
+    const rawValue = localStorage.getItem(getNotificationStorageKey(userId));
+    if (!rawValue) return null;
+
+    const parsed = JSON.parse(rawValue);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    return {
+      enabled: Boolean(parsed.enabled),
+    };
+  } catch (error) {
+    console.error('Failed to read notification settings from local storage', error);
+    return null;
+  }
+};
+
+const writeNotificationStorage = (userId, value) => {
+  try {
+    localStorage.setItem(getNotificationStorageKey(userId), JSON.stringify(value));
+  } catch (error) {
+    console.error('Failed to write notification settings to local storage', error);
+  }
+};
+
 const Avatar = ({ name, isGroup = false, online = false, tone = 'teal' }) => {
   const classes =
     tone === 'emerald'
@@ -219,6 +248,8 @@ const Dashboard = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({ enabled: false });
+  const [notificationStatus, setNotificationStatus] = useState('');
   const [isSavingAutoPilot, setIsSavingAutoPilot] = useState(false);
   const [hasLoadedAutoPilotSettings, setHasLoadedAutoPilotSettings] = useState(false);
   const [autoPilotMessage, setAutoPilotMessage] = useState('');
@@ -286,6 +317,20 @@ const Dashboard = () => {
     const parsedUser = JSON.parse(storedUser);
     setUserInfo(parsedUser);
 
+    const localNotificationSettings = readNotificationStorage(parsedUser.id);
+    setNotificationSettings({
+      enabled: Boolean(localNotificationSettings?.enabled),
+    });
+    setNotificationStatus(
+      typeof window !== 'undefined' && 'Notification' in window
+        ? Notification.permission === 'granted'
+          ? 'Browser notifications are allowed.'
+          : Notification.permission === 'denied'
+            ? 'Browser notifications are blocked in this browser.'
+            : 'Browser notifications are available but not yet allowed.'
+        : 'Browser notifications are not supported on this device.',
+    );
+
     const localAutoPilotSettings = readAutoPilotStorage(parsedUser.id);
     if (localAutoPilotSettings) {
       setAutoPilotSettings(localAutoPilotSettings);
@@ -323,6 +368,14 @@ const Dashboard = () => {
     });
 
     newSocket.on('receive_message', (data) => {
+      const shouldNotify =
+        data.senderId !== parsedUser.id
+        && notificationSettings.enabled
+        && typeof window !== 'undefined'
+        && 'Notification' in window
+        && Notification.permission === 'granted'
+        && (document.visibilityState !== 'visible' || data.roomId !== activeRoomRef.current);
+
       setConversations((prev) => {
         const updated = [...prev];
         const index = updated.findIndex((conversation) => conversation.id === data.roomId);
@@ -346,6 +399,17 @@ const Dashboard = () => {
         fetchConversations(parsedUser.id);
         return prev;
       });
+
+      if (shouldNotify) {
+        const title = data.senderName || 'NeoChat';
+        const body = data.content || 'You received a new message.';
+        const notification = new Notification(title, { body });
+        notification.onclick = () => {
+          window.focus();
+          openConversation(data.roomId);
+          notification.close();
+        };
+      }
     });
 
     newSocket.on('new_conversation', () => {
@@ -358,7 +422,7 @@ const Dashboard = () => {
     fetchAutoPilotSettings(parsedUser.id);
 
     return () => newSocket.disconnect();
-  }, [fetchAutoPilotSettings, navigate]);
+  }, [fetchAutoPilotSettings, navigate, notificationSettings.enabled]);
 
   useEffect(() => {
     if (userInfo) {
@@ -379,6 +443,14 @@ const Dashboard = () => {
 
     writeAutoPilotStorage(userInfo.id, autoPilotSettings);
   }, [autoPilotSettings, hasLoadedAutoPilotSettings, userInfo]);
+
+  useEffect(() => {
+    if (!userInfo) {
+      return;
+    }
+
+    writeNotificationStorage(userInfo.id, notificationSettings);
+  }, [notificationSettings, userInfo]);
 
   useEffect(() => {
     const isContactsView = activeSection === 'contacts' || mobileSection === 'contacts';
@@ -647,6 +719,44 @@ const Dashboard = () => {
     localStorage.removeItem('userInfo');
     socket?.disconnect();
     navigate('/login');
+  };
+
+  const handleToggleNotifications = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setNotificationStatus('Browser notifications are not supported on this device.');
+      return;
+    }
+
+    if (notificationSettings.enabled) {
+      setNotificationSettings({ enabled: false });
+      setNotificationStatus('Browser notifications turned off for NeoChat.');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      setNotificationSettings({ enabled: true });
+      setNotificationStatus('Browser notifications turned on.');
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      setNotificationStatus('Browser notifications are blocked in this browser.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      setNotificationSettings({ enabled: true });
+      setNotificationStatus('Browser notifications turned on.');
+      return;
+    }
+
+    setNotificationSettings({ enabled: false });
+    setNotificationStatus(
+      permission === 'denied'
+        ? 'Browser notifications are blocked in this browser.'
+        : 'Browser notifications were not enabled.',
+    );
   };
 
   const activeConversation = useMemo(
@@ -1032,11 +1142,23 @@ const Dashboard = () => {
 
       <SettingRow
         label="Notifications"
-        hint="Visual shell for future preferences."
+        hint={notificationStatus || 'Receive browser notifications for new messages.'}
         action={
-          <div className="rounded-full bg-sky-500/10 p-2 text-sky-600 dark:text-sky-300">
-            <Bell className="h-4 w-4" />
-          </div>
+          <button
+            type="button"
+            onClick={handleToggleNotifications}
+            className={`flex h-10 w-16 items-center rounded-full p-1 transition ${
+              notificationSettings.enabled ? 'bg-slate-900 dark:bg-sky-500/70' : 'bg-slate-200'
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow transition ${
+                notificationSettings.enabled ? 'translate-x-6' : ''
+              }`}
+            >
+              <Bell className="h-4 w-4" />
+            </span>
+          </button>
         }
       />
 
