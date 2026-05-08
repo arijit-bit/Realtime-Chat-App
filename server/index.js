@@ -29,6 +29,7 @@ app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/conversations', require('./routes/conversationRoutes'));
+app.use('/api/bot', require('./routes/botRoutes'));
 
 const Message = require('./models/Message');
 const ChatRoom = require('./models/ChatRoom');
