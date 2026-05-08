@@ -630,32 +630,55 @@ const Dashboard = () => {
     );
   }, [contacts, deferredSearch]);
 
+  const isAutoPilotConversation = (conversation) => {
+    if (!autoPilotSettings.enabled || conversation.isGroup || !conversation.targetUserId) {
+      return false;
+    }
+
+    if (autoPilotSettings.scope === 'all') {
+      return true;
+    }
+
+    return autoPilotSettings.selectedContactIds.includes(conversation.targetUserId);
+  };
+
   const renderConversationItem = (conversation) => {
     const isActive = activeRoom === conversation.id;
     const previewTone = conversation.isGroup ? 'sky' : 'emerald';
+    const isAutoPilotEnabledForConversation = isAutoPilotConversation(conversation);
 
     return (
       <button
         key={conversation.id}
         type="button"
         onClick={() => openConversation(conversation.id)}
-        className={`group flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-          isActive
-            ? 'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900/80'
-            : 'border-transparent bg-white/55 hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60'
+        className={`group relative isolate flex w-full items-center gap-3 overflow-hidden rounded-2xl border px-3 py-3 text-left transition ${
+          isAutoPilotEnabledForConversation
+            ? 'ai-active-conversation'
+            : isActive
+              ? 'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900/80'
+              : 'border-transparent bg-white/55 hover:border-white/70 hover:bg-white/80 dark:bg-slate-900/35 dark:hover:border-white/10 dark:hover:bg-slate-900/60'
         }`}
       >
+        {isAutoPilotEnabledForConversation && <span className="ai-active-conversation__mesh" aria-hidden="true" />}
         <Avatar
           name={conversation.name}
           isGroup={conversation.isGroup}
           online={conversation.onlineStatus}
           tone={previewTone}
         />
-        <div className="min-w-0 flex-1">
+        <div className="relative z-10 min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
-            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-              {conversation.name}
-            </p>
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {conversation.name}
+              </p>
+              {isAutoPilotEnabledForConversation && (
+                <span className="shrink-0 rounded-full border border-white/50 bg-white/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-950/80 backdrop-blur-md dark:border-white/15 dark:bg-slate-950/30 dark:text-indigo-100/90">
+                  AI Active
+                </span>
+              )}
+            </div>
             <span className="shrink-0 text-[11px] text-slate-500 dark:text-slate-400">
               {formatConversationTime(conversation.lastMessageTime)}
             </span>
