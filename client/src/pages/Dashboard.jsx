@@ -674,8 +674,8 @@ const Dashboard = () => {
                 {conversation.name}
               </p>
               {isAutoPilotEnabledForConversation && (
-                <span className="shrink-0 rounded-full border border-white/50 bg-white/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-950/80 backdrop-blur-md dark:border-white/15 dark:bg-slate-950/30 dark:text-indigo-100/90">
-                  AI Active
+                <span className="shrink-0 rounded-full border border-slate-300/80 bg-slate-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white dark:border-slate-700 dark:bg-slate-100 dark:text-slate-900">
+                  Auto Pilot
                 </span>
               )}
             </div>
