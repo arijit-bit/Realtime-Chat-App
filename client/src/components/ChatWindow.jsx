@@ -278,6 +278,11 @@ const ChatWindow = ({
   }, [messages, isLoadingMore]);
 
   useEffect(() => {
+    if (isLoadingMore || !shouldStickToBottomRef.current) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [typingUsers, isLoadingMore]);
+
+  useEffect(() => {
     if (messages.length > 0 && roomId) {
       const latestMessages = messages.slice(-50);
       writeChatCache(`chat_history_${roomId}`, latestMessages);
