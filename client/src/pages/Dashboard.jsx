@@ -666,9 +666,9 @@ const Dashboard = () => {
   const autoPilotSelectedCount = displayedAutoPilotSelectedContactIds.length;
   const autoPilotSummary = autoPilotSettings.enabled
     ? autoPilotSettings.scope === 'all'
-      ? 'Auto pilot is active for all direct contacts.'
-      : `Auto pilot is active for ${autoPilotSelectedCount} selected contact${autoPilotSelectedCount === 1 ? '' : 's'}.`
-    : 'Auto pilot is currently turned off.';
+      ? 'Auto all'
+      : `Auto ${autoPilotSelectedCount}`
+    : 'Auto off';
 
   const directChats = useMemo(
     () => conversations.filter((conversation) => !conversation.isGroup),
@@ -833,10 +833,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="mt-4 rounded-[28px] border border-white/60 bg-white/65 px-4 py-3 text-sm text-slate-600 shadow-sm shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/55 dark:text-slate-300">
-        {autoPilotSummary}
-      </div>
-
       <div className="glass-panel mt-4 p-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -848,24 +844,34 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="mt-3 flex gap-2">
-          {[
-            { id: 'direct', label: 'Direct' },
-            { id: 'groups', label: 'Groups' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setConversationFilter(item.id)}
-              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-                conversationFilter === item.id
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                  : 'bg-white/70 text-slate-600 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="flex gap-2">
+            {[
+              { id: 'direct', label: 'Direct' },
+              { id: 'groups', label: 'Groups' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setConversationFilter(item.id)}
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                  conversationFilter === item.id
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                    : 'bg-white/70 text-slate-600 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={openAutoPilotModal}
+            className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            title="Open auto pilot settings"
+          >
+            {autoPilotSummary}
+          </button>
         </div>
       </div>
 
