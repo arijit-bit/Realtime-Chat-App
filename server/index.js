@@ -64,15 +64,31 @@ const getRecipientIdForRoom = (roomName, senderId) => (
 
 const ensureRoomExists = async (roomName) => {
   let room = await ChatRoom.findOne({ roomName });
+  const directParticipants = getDirectParticipants(roomName);
+  const shouldBeDirectMessage = isDirectMessageRoom(roomName);
+
   if (room) {
+    const nextIsGroupChat = !shouldBeDirectMessage;
+    const hasCorrectGroupFlag = room.isGroupChat === nextIsGroupChat;
+    const hasExpectedMembers = !shouldBeDirectMessage
+      || directParticipants.every((participantId) =>
+        (room.members || []).some((member) => member.toString() === participantId),
+      );
+
+    if (!hasCorrectGroupFlag || !hasExpectedMembers) {
+      room.isGroupChat = nextIsGroupChat;
+      if (shouldBeDirectMessage) {
+        room.members = directParticipants;
+      }
+      await room.save();
+    }
+
     return room;
   }
 
-  const directParticipants = getDirectParticipants(roomName);
-
   room = await ChatRoom.create({
     roomName,
-    isGroupChat: !isDirectMessageRoom(roomName),
+    isGroupChat: !shouldBeDirectMessage,
     members: directParticipants,
   });
 
@@ -127,7 +143,8 @@ const persistAndBroadcastMessage = async ({
   isAutomated = false,
 }) => {
   const room = await ensureRoomExists(roomId);
-  const recipientId = room.isGroupChat ? null : getRecipientIdForRoom(roomId, senderId);
+  const isDirectRoom = isDirectMessageRoom(roomId);
+  const recipientId = isDirectRoom ? getRecipientIdForRoom(roomId, senderId) : null;
 
   const newMessage = await Message.create({
     roomId: room._id,
@@ -200,7 +217,7 @@ const maybeSendAutoPilotReply = async ({
   content,
   isAutomated,
 }) => {
-  if (room.isGroupChat || isAutomated || !isDirectMessageRoom(roomId)) {
+  if (isAutomated || !isDirectMessageRoom(roomId)) {
     return;
   }
 
