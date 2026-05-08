@@ -10,33 +10,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [serverStatus, setServerStatus] = useState('');
-  const [isCheckingServer, setIsCheckingServer] = useState(false);
   const navigate = useNavigate();
-
-  const handleServerCheck = async () => {
-    setIsCheckingServer(true);
-    setServerStatus('');
-
-    try {
-      const response = await fetch(`${API_URL}/api/system/ping`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Server check failed');
-      }
-
-      setServerStatus(`Connected: ${data.message}`);
-    } catch (err) {
-      setServerStatus(
-        err.message === 'Failed to fetch'
-          ? 'Server is unreachable right now.'
-          : err.message,
-      );
-    } finally {
-      setIsCheckingServer(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -244,22 +218,6 @@ const Login = () => {
           </form>
 
           <div className="auth-divider"><span>or</span></div>
-
-          <button
-            type="button"
-            className="auth-submit-btn"
-            onClick={handleServerCheck}
-            disabled={isCheckingServer}
-          >
-            {isCheckingServer ? 'Checking server...' : 'Test server API connection'}
-          </button>
-
-          {serverStatus && (
-            <div className="error-message" role="status">
-              <span className="error-icon">i</span>
-              {serverStatus}
-            </div>
-          )}
 
           <div className="auth-switch">
             Don&apos;t have an account?{' '}
