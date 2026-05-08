@@ -77,10 +77,9 @@ let currentApiIndex = 0;
 
 async function CallAPI(input, targetModel = 'auto') {
     const apis = [
-        { name: "groq", fn: callGroq },
-        { name: "openrouter", fn: callOpenRouter },
-        { name: "huggingface", fn: callHuggingFace },
         { name: "raiden", fn: callRaiden },
+        { name: "openrouter", fn: callOpenRouter },
+        { name: "groq", fn: callGroq },
         { name: "gemini", fn: callGemini }
     ];
     
