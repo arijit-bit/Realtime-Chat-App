@@ -6,6 +6,30 @@ const formatAutoPilotSettings = (user) => ({
     selectedContactIds: (user.autoPilot?.selectedContacts || []).map((contactId) => contactId.toString())
 });
 
+const validatePassword = (password) => {
+    if (!password || password.length < 8) {
+        return 'Password must be at least 8 characters long';
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        return 'Password must include at least one uppercase letter';
+    }
+
+    if (!/[a-z]/.test(password)) {
+        return 'Password must include at least one lowercase letter';
+    }
+
+    if (!/[0-9]/.test(password)) {
+        return 'Password must include at least one number';
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        return 'Password must include at least one special character';
+    }
+
+    return null;
+};
+
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}).select('-password');
@@ -178,6 +202,39 @@ const updateProfile = async (req, res) => {
     }
 };
 
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.params.id;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Current password and new password are required' });
+        }
+
+        const passwordError = validatePassword(newPassword);
+        if (passwordError) {
+            return res.status(400).json({ message: passwordError });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const passwordMatches = await user.matchPassword(currentPassword);
+        if (!passwordMatches) {
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 const getAutoPilotSettings = async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select('autoPilot');
@@ -241,6 +298,7 @@ module.exports = {
     getUserContacts,
     addContact,
     updateProfile,
+    changePassword,
     getAutoPilotSettings,
     updateAutoPilotSettings
 };

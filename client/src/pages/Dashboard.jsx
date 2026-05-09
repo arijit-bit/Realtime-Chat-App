@@ -217,6 +217,8 @@ const Dashboard = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editUsername, setEditUsername] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({ enabled: false });
   const [notificationStatus, setNotificationStatus] = useState('');
@@ -656,25 +658,54 @@ const Dashboard = () => {
 
   const handleSaveProfile = async (event) => {
     event.preventDefault();
-    if (!editUsername.trim()) return;
+    const trimmedUsername = editUsername.trim();
+    const wantsPasswordChange = currentPassword.trim() || newPassword.trim();
+
+    if (!trimmedUsername && !wantsPasswordChange) return;
+    if (wantsPasswordChange && (!currentPassword.trim() || !newPassword.trim())) {
+      alert('Please enter both your current password and a new password.');
+      return;
+    }
 
     setIsSaving(true);
     try {
-      const response = await fetch(`${API_URL}/api/users/${userInfo.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: editUsername.trim() }),
-      });
+      if (trimmedUsername && trimmedUsername !== userInfo.username) {
+        const profileResponse = await fetch(`${API_URL}/api/users/${userInfo.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: trimmedUsername }),
+        });
 
-      const data = await response.json();
-      if (!response.ok) {
-        alert(data.message || 'Error updating profile');
-        return;
+        const profileData = await profileResponse.json();
+        if (!profileResponse.ok) {
+          alert(profileData.message || 'Error updating profile');
+          return;
+        }
+
+        const updatedUser = { ...userInfo, username: profileData.username };
+        setUserInfo(updatedUser);
+        localStorage.setItem('userInfo', JSON.stringify(updatedUser));
       }
 
-      const updatedUser = { ...userInfo, username: data.username };
-      setUserInfo(updatedUser);
-      localStorage.setItem('userInfo', JSON.stringify(updatedUser));
+      if (wantsPasswordChange) {
+        const passwordResponse = await fetch(`${API_URL}/api/users/${userInfo.id}/password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentPassword: currentPassword.trim(),
+            newPassword: newPassword.trim(),
+          }),
+        });
+
+        const passwordData = await passwordResponse.json();
+        if (!passwordResponse.ok) {
+          alert(passwordData.message || 'Error updating password');
+          return;
+        }
+      }
+
+      setCurrentPassword('');
+      setNewPassword('');
       setShowSettingsModal(false);
     } catch (error) {
       console.error(error);
@@ -1099,6 +1130,39 @@ const Dashboard = () => {
           onChange={(event) => setEditUsername(event.target.value)}
           className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
         />
+      </div>
+
+      <div className="glass-panel p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          Password
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+              Current password
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+              New password
+            </label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+            />
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Use at least 8 characters with uppercase, lowercase, a number, and a special character.
+            </p>
+          </div>
+        </div>
       </div>
 
       <SettingRow

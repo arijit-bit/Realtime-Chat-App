@@ -90,6 +90,10 @@ const Register = () => {
       setError('Username must be at least 3 characters.');
       return;
     }
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      setError('Use at least 8 characters with uppercase, lowercase, a number, and a special character.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -315,6 +319,9 @@ const Register = () => {
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </div>
+              <span className="username-hint">
+                Use 8+ chars, upper/lowercase, a number, and a symbol.
+              </span>
             </div>
 
             <button

@@ -1,12 +1,41 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
+const validatePassword = (password) => {
+    if (!password || password.length < 8) {
+        return 'Password must be at least 8 characters long';
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        return 'Password must include at least one uppercase letter';
+    }
+
+    if (!/[a-z]/.test(password)) {
+        return 'Password must include at least one lowercase letter';
+    }
+
+    if (!/[0-9]/.test(password)) {
+        return 'Password must include at least one number';
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        return 'Password must include at least one special character';
+    }
+
+    return null;
+};
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
     try {
         const { username, email, password, avatar } = req.body;
+        const passwordError = validatePassword(password);
+
+        if (passwordError) {
+            return res.status(400).json({ message: passwordError });
+        }
 
         // Check username and email separately to give specific error messages
         const existingUsername = await User.findOne({ username });
