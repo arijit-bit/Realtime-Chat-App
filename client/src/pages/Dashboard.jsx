@@ -1081,7 +1081,7 @@ const Dashboard = () => {
   );
 
   const renderSettingsContent = () => (
-    <form onSubmit={handleSaveProfile} className="space-y-4 pb-24 md:pb-0">
+    <form onSubmit={handleSaveProfile} className="flex min-h-full flex-col gap-4 pb-24 md:pb-0">
       <div className="glass-panel px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
           Settings
@@ -1145,7 +1145,7 @@ const Dashboard = () => {
         }
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="sticky bottom-0 mt-auto flex flex-col gap-3 rounded-[24px] border border-white/60 bg-white/85 p-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/85 sm:flex-row">
         <button
           type="submit"
           disabled={isSaving || !editUsername.trim()}
