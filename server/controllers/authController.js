@@ -24,7 +24,7 @@ const registerUser = async (req, res) => {
             email,
             password,
             avatar: avatar || '',
-            onlineStatus: true
+            onlineStatus: false
         });
 
         if (user) {
@@ -72,10 +72,6 @@ const loginUser = async (req, res) => {
         const user = await User.findOne({ username });
 
         if (user && (await user.matchPassword(password))) {
-            // Set online status to true
-            user.onlineStatus = true;
-            await user.save();
-
             res.json({
                 id: user._id,
                 username: user.username,

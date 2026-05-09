@@ -1081,7 +1081,7 @@ const Dashboard = () => {
   );
 
   const renderSettingsContent = () => (
-    <form onSubmit={handleSaveProfile} className="space-y-4">
+    <form onSubmit={handleSaveProfile} className="space-y-4 pb-24 md:pb-0">
       <div className="glass-panel px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
           Settings
@@ -1236,7 +1236,7 @@ const Dashboard = () => {
               setEditUsername(userInfo.username);
               setShowSettingsModal(true);
             }}
-            className="group flex h-12 w-12 items-center justify-center rounded-xl bg-white/80 text-slate-900 shadow-lg shadow-slate-950/5 transition hover:bg-white dark:bg-slate-900/70 dark:text-white"
+            className="group flex h-12 w-12 items-center justify-center rounded-xl border border-white/60 bg-white/80 text-slate-900 shadow-lg shadow-slate-950/5 transition hover:bg-white dark:border-white/10 dark:bg-slate-800 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] dark:hover:bg-slate-700"
           >
             <span className="text-base font-semibold uppercase">{userInfo.username?.slice(0, 1)}</span>
           </button>

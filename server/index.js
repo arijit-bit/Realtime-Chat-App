@@ -49,6 +49,18 @@ const userSocketMap = new Map();
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const setUserOnlineStatus = async (userId, onlineStatus) => {
+  if (!userId || userId === 'undefined') {
+    return;
+  }
+
+  try {
+    await User.findByIdAndUpdate(userId, { onlineStatus });
+  } catch (error) {
+    console.error(`Failed to update online status for ${userId}:`, error.message);
+  }
+};
+
 const isDirectMessageRoom = (roomName = '') => {
   const parts = String(roomName).split('_');
   return parts.length === 2 && parts.every(Boolean);
@@ -123,12 +135,14 @@ const emitConversationUpdate = (room, roomId, content, senderId) => {
   }
 
   memberIds.forEach((memberId) => {
-    const memberSocketId = userSocketMap.get(memberId);
-    if (memberSocketId && memberId !== String(senderId)) {
-      io.to(memberSocketId).emit('new_conversation', {
-        roomId,
-        lastMessage: content,
-        senderId,
+    const memberSocketIds = userSocketMap.get(memberId);
+    if (memberSocketIds && memberId !== String(senderId)) {
+      memberSocketIds.forEach((socketId) => {
+        io.to(socketId).emit('new_conversation', {
+          roomId,
+          lastMessage: content,
+          senderId,
+        });
       });
     }
   });
@@ -288,8 +302,15 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id, 'UserId:', userId);
 
   if (userId && userId !== 'undefined') {
-    userSocketMap.set(userId, socket.id);
-    io.emit('user_status_changed', { userId, status: 'online' });
+    const existingSockets = userSocketMap.get(userId) || new Set();
+    const wasOffline = existingSockets.size === 0;
+    existingSockets.add(socket.id);
+    userSocketMap.set(userId, existingSockets);
+
+    if (wasOffline) {
+      void setUserOnlineStatus(userId, true);
+      io.emit('user_status_changed', { userId, status: 'online' });
+    }
   }
 
   socket.on('join_room', (roomId) => {
@@ -347,14 +368,32 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.id);
 
     if (userId && userId !== 'undefined') {
-      userSocketMap.delete(userId);
-      io.emit('user_status_changed', { userId, status: 'offline' });
+      const existingSockets = userSocketMap.get(userId);
+      if (existingSockets) {
+        existingSockets.delete(socket.id);
+
+        if (existingSockets.size === 0) {
+          userSocketMap.delete(userId);
+          void setUserOnlineStatus(userId, false);
+          io.emit('user_status_changed', { userId, status: 'offline' });
+        } else {
+          userSocketMap.set(userId, existingSockets);
+        }
+      }
     }
   });
 });
 
 const PORT = process.env.PORT || 5001;
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} and accessible on the local network`);
+const startServer = async () => {
+  await User.updateMany({}, { onlineStatus: false });
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT} and accessible on the local network`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('Failed to start server cleanly:', error);
+  process.exit(1);
 });
