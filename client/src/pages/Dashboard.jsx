@@ -1133,39 +1133,6 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="glass-panel p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            Password
-          </p>
-          <div className="space-y-3">
-            <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Old password
-              </label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                New password
-              </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
-              />
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                Use at least 8 characters with uppercase, lowercase, a number, and a special character.
-              </p>
-            </div>
-          </div>
-        </div>
-
         <SettingRow
           label="Theme"
           hint="Switch between bright and dim surfaces."
@@ -1209,6 +1176,39 @@ const Dashboard = () => {
             </button>
           }
         />
+
+        <div className="glass-panel p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            Password
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Old password
+              </label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                New password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+              />
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Use at least 8 characters with uppercase, lowercase, a number, and a special character.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mt-4 pb-24 md:pb-0">
