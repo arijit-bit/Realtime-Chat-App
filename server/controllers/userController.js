@@ -208,7 +208,7 @@ const changePassword = async (req, res) => {
         const userId = req.params.id;
 
         if (!currentPassword || !newPassword) {
-            return res.status(400).json({ message: 'Current password and new password are required' });
+            return res.status(400).json({ message: 'Old password and new password are required' });
         }
 
         const passwordError = validatePassword(newPassword);
@@ -223,7 +223,7 @@ const changePassword = async (req, res) => {
 
         const passwordMatches = await user.matchPassword(currentPassword);
         if (!passwordMatches) {
-            return res.status(401).json({ message: 'Current password is incorrect' });
+            return res.status(401).json({ message: 'Old password is incorrect' });
         }
 
         user.password = newPassword;

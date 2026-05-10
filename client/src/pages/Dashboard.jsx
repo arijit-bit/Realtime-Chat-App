@@ -659,11 +659,11 @@ const Dashboard = () => {
   const handleSaveProfile = async (event) => {
     event.preventDefault();
     const trimmedUsername = editUsername.trim();
-    const wantsPasswordChange = currentPassword.trim() || newPassword.trim();
+    const wantsPasswordChange = Boolean(currentPassword.trim() || newPassword.trim());
 
     if (!trimmedUsername && !wantsPasswordChange) return;
     if (wantsPasswordChange && (!currentPassword.trim() || !newPassword.trim())) {
-      alert('Please enter both your current password and a new password.');
+      alert('Please enter both your old password and your new password.');
       return;
     }
 
@@ -1112,7 +1112,7 @@ const Dashboard = () => {
   );
 
   const renderSettingsContent = () => (
-    <form onSubmit={handleSaveProfile} className="flex min-h-full flex-col gap-4 pb-24 md:pb-0">
+    <form onSubmit={handleSaveProfile} className="flex min-h-full flex-col gap-4 overflow-y-auto pb-28 pr-1 md:pb-0">
       <div className="glass-panel px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
           Settings
@@ -1139,7 +1139,7 @@ const Dashboard = () => {
         <div className="space-y-3">
           <div>
             <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              Current password
+              Old password
             </label>
             <input
               type="password"
@@ -1209,10 +1209,10 @@ const Dashboard = () => {
         }
       />
 
-      <div className="sticky bottom-0 mt-auto flex flex-col gap-3 rounded-[24px] border border-white/60 bg-white/85 p-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/85 sm:flex-row">
+      <div className="sticky bottom-24 mt-auto flex flex-col gap-3 rounded-[24px] border border-white/60 bg-white/85 p-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/85 sm:flex-row md:bottom-0">
         <button
           type="submit"
-          disabled={isSaving || !editUsername.trim()}
+          disabled={isSaving || (!editUsername.trim() && !currentPassword.trim() && !newPassword.trim())}
           className="flex-1 rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
         >
           {isSaving ? 'Saving...' : 'Save changes'}
@@ -1308,7 +1308,7 @@ const Dashboard = () => {
       </aside>
 
       <div
-        className={`relative z-10 w-full shrink-0 flex-col border-r border-white/50 px-4 py-4 backdrop-blur-xl dark:border-white/10 md:flex md:w-[360px] xl:w-[400px] ${
+        className={`relative z-10 min-h-0 w-full shrink-0 flex-col overflow-y-auto border-r border-white/50 px-4 py-4 backdrop-blur-xl dark:border-white/10 md:flex md:w-[360px] xl:w-[400px] ${
           mobileSection === 'chats' && showMobileChat ? 'hidden md:flex' : 'flex'
         }`}
       >
