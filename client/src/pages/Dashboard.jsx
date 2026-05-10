@@ -1112,118 +1112,122 @@ const Dashboard = () => {
   );
 
   const renderSettingsContent = () => (
-    <form onSubmit={handleSaveProfile} className="flex min-h-full flex-col gap-4 overflow-y-auto pb-28 pr-1 md:pb-0">
-      <div className="glass-panel px-4 py-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-          Settings
-        </p>
-        <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Profile and appearance</h2>
-      </div>
+    <form onSubmit={handleSaveProfile} className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1 pb-6 md:pb-4">
+        <div className="glass-panel px-4 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+            Settings
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Profile and appearance</h2>
+        </div>
 
-      <div className="glass-panel p-4">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-          Username
-        </label>
-        <input
-          type="text"
-          value={editUsername}
-          onChange={(event) => setEditUsername(event.target.value)}
-          className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+        <div className="glass-panel p-4">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            Username
+          </label>
+          <input
+            type="text"
+            value={editUsername}
+            onChange={(event) => setEditUsername(event.target.value)}
+            className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+          />
+        </div>
+
+        <div className="glass-panel p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            Password
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Old password
+              </label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                New password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
+              />
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Use at least 8 characters with uppercase, lowercase, a number, and a special character.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <SettingRow
+          label="Theme"
+          hint="Switch between bright and dim surfaces."
+          action={
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`flex h-10 w-16 items-center rounded-full p-1 transition ${
+                isDarkMode ? 'bg-slate-900 dark:bg-sky-500/70' : 'bg-slate-200'
+              }`}
+            >
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow transition ${
+                  isDarkMode ? 'translate-x-6' : ''
+                }`}
+              >
+                {isDarkMode ? <Moon className="h-4 w-4" /> : <SunMedium className="h-4 w-4" />}
+              </span>
+            </button>
+          }
+        />
+
+        <SettingRow
+          label="Notifications"
+          hint={notificationStatus || 'Receive browser notifications for new messages.'}
+          action={
+            <button
+              type="button"
+              onClick={handleToggleNotifications}
+              className={`flex h-10 w-16 items-center rounded-full p-1 transition ${
+                notificationSettings.enabled ? 'bg-slate-900 dark:bg-sky-500/70' : 'bg-slate-200'
+              }`}
+            >
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow transition ${
+                  notificationSettings.enabled ? 'translate-x-6' : ''
+                }`}
+              >
+                <Bell className="h-4 w-4" />
+              </span>
+            </button>
+          }
         />
       </div>
 
-      <div className="glass-panel p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-          Password
-        </p>
-        <div className="space-y-3">
-          <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              Old password
-            </label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              New password
-            </label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              className="w-full rounded-xl border border-transparent bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-200 focus:bg-white dark:bg-slate-900/70 dark:text-white dark:focus:border-sky-500/20"
-            />
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Use at least 8 characters with uppercase, lowercase, a number, and a special character.
-            </p>
-          </div>
+      <div className="mt-4 pb-24 md:pb-0">
+        <div className="glass-panel flex flex-col gap-3 border-white/70 bg-white/80 p-3 shadow-lg shadow-slate-950/5 dark:border-white/10 dark:bg-slate-950/80 sm:flex-row">
+          <button
+            type="submit"
+            disabled={isSaving || (!editUsername.trim() && !currentPassword.trim() && !newPassword.trim())}
+            className="flex-1 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+          >
+            {isSaving ? 'Saving...' : 'Save changes'}
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 sm:min-w-[140px]"
+          >
+            Sign out
+          </button>
         </div>
-      </div>
-
-      <SettingRow
-        label="Theme"
-        hint="Switch between bright and dim surfaces."
-        action={
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className={`flex h-10 w-16 items-center rounded-full p-1 transition ${
-              isDarkMode ? 'bg-slate-900 dark:bg-sky-500/70' : 'bg-slate-200'
-            }`}
-          >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow transition ${
-                isDarkMode ? 'translate-x-6' : ''
-              }`}
-            >
-              {isDarkMode ? <Moon className="h-4 w-4" /> : <SunMedium className="h-4 w-4" />}
-            </span>
-          </button>
-        }
-      />
-
-      <SettingRow
-        label="Notifications"
-        hint={notificationStatus || 'Receive browser notifications for new messages.'}
-        action={
-          <button
-            type="button"
-            onClick={handleToggleNotifications}
-            className={`flex h-10 w-16 items-center rounded-full p-1 transition ${
-              notificationSettings.enabled ? 'bg-slate-900 dark:bg-sky-500/70' : 'bg-slate-200'
-            }`}
-          >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow transition ${
-                notificationSettings.enabled ? 'translate-x-6' : ''
-              }`}
-            >
-              <Bell className="h-4 w-4" />
-            </span>
-          </button>
-        }
-      />
-
-      <div className="sticky bottom-24 mt-auto flex flex-col gap-3 rounded-[24px] border border-white/60 bg-white/85 p-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/85 sm:flex-row md:bottom-0">
-        <button
-          type="submit"
-          disabled={isSaving || (!editUsername.trim() && !currentPassword.trim() && !newPassword.trim())}
-          className="flex-1 rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-        >
-          {isSaving ? 'Saving...' : 'Save changes'}
-        </button>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 sm:min-w-[140px]"
-        >
-          Sign out
-        </button>
       </div>
     </form>
   );
