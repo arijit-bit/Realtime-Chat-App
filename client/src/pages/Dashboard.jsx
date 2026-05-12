@@ -985,7 +985,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="mt-4 flex-1 overflow-y-auto pr-1">
+      <div className="mt-4 flex-1 overflow-y-auto pr-1 pb-24 md:pb-0">
         <div className="space-y-2.5">
           {isConversationsLoading && (
             <div className="glass-panel px-5 py-8 text-center">
@@ -1108,8 +1108,9 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1 pb-24 md:pb-6">
-        <div className="grid gap-3 xl:grid-cols-[1.3fr_0.9fr]">
+      <div className="mt-4 flex-1 overflow-y-auto pr-1 pb-24 md:pb-6">
+        <div className="space-y-3">
+          <div className="grid gap-3 xl:grid-cols-[1.3fr_0.9fr]">
           <div className="glass-panel bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_55%),linear-gradient(135deg,rgba(255,255,255,0.92),rgba(240,249,255,0.88))] px-5 py-5 dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(15,23,42,0.76))]">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 min-w-[3.5rem] shrink-0 items-center justify-center rounded-2xl bg-sky-500/15 p-3 text-sky-600 shadow-sm shadow-sky-500/10 dark:text-sky-300">
@@ -1161,42 +1162,43 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-        </div>
+          </div>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          {[
-            {
-              title: 'Start from your contacts',
-              body: 'Use the Contacts tab to keep your calling list tidy, then jump back here when live calling actions are connected.',
-            },
-            {
-              title: 'Comfortable on smaller screens',
-              body: 'Extra bottom padding keeps the last card visible instead of letting it disappear beneath the floating mobile nav.',
-            },
-            {
-              title: 'Icon spacing fixed',
-              body: 'The phone SVG now lives inside padded, non-shrinking containers so it keeps its proportions in compact rows.',
-            },
-            {
-              title: 'Ready for future actions',
-              body: 'This layout gives us clear room for recent calls, quick dial actions, and voice or video state once backend support lands.',
-            },
-          ].map((card) => (
-            <div
-              key={card.title}
-              className="glass-panel bg-gradient-to-br from-white/88 to-slate-50/92 px-5 py-5 dark:from-slate-900/76 dark:to-slate-900/52"
-            >
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-11 w-11 min-w-[2.75rem] shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 p-2.5 text-sky-600 dark:text-sky-300">
-                  <Phone className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{card.body}</p>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {[
+              {
+                title: 'Start from your contacts',
+                body: 'Use the Contacts tab to keep your calling list tidy, then jump back here when live calling actions are connected.',
+              },
+              {
+                title: 'Comfortable on smaller screens',
+                body: 'Extra bottom padding keeps the last card visible instead of letting it disappear beneath the floating mobile nav.',
+              },
+              {
+                title: 'Icon spacing fixed',
+                body: 'The phone SVG now lives inside padded, non-shrinking containers so it keeps its proportions in compact rows.',
+              },
+              {
+                title: 'Ready for future actions',
+                body: 'This layout gives us clear room for recent calls, quick dial actions, and voice or video state once backend support lands.',
+              },
+            ].map((card) => (
+              <div
+                key={card.title}
+                className="glass-panel bg-gradient-to-br from-white/88 to-slate-50/92 px-5 py-5 dark:from-slate-900/76 dark:to-slate-900/52"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-11 w-11 min-w-[2.75rem] shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 p-2.5 text-sky-600 dark:text-sky-300">
+                    <Phone className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{card.body}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </>
