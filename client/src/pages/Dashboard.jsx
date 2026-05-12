@@ -1033,7 +1033,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="mt-4 flex-1 overflow-y-auto pr-1">
+      <div className="mt-4 flex-1 overflow-y-auto pr-1 pb-24 md:pb-0">
         <div className="space-y-3">
           {isSearchingContact && (
             <div className="glass-panel px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
@@ -1079,34 +1079,125 @@ const Dashboard = () => {
 
   const renderCallsPane = () => (
     <>
-      <div className="glass-panel px-4 py-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-          Calls
-        </p>
-        <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">Call moments</h2>
-      </div>
+      <div className="glass-panel overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+              Calls
+            </p>
+            <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white sm:text-2xl">
+              Call moments
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              A cleaner home for calling, tuned for small screens and roomy layouts while voice and video features
+              continue to evolve.
+            </p>
+          </div>
 
-      <div className="mt-4 space-y-3 overflow-y-auto pr-1">
-        {[
-          { title: 'Voice calls', body: 'Voice and video actions are ready for a future backend pass.' },
-          { title: 'Design parity', body: 'The layout now reserves a native mobile Calls destination in the navigation.' },
-          { title: 'Reusable shell', body: 'This section uses the same glassmorphism treatment so it feels cohesive today.' },
-        ].map((card) => (
-          <div
-            key={card.title}
-            className="glass-panel bg-gradient-to-br from-white/85 to-sky-50/85 px-5 py-5 dark:from-slate-900/70 dark:to-slate-900/40"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
-                <Phone className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{card.body}</p>
-              </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white/75 px-4 py-3 shadow-sm shadow-slate-950/5 dark:border-white/10 dark:bg-slate-900/55">
+            <div className="flex h-12 w-12 min-w-[3rem] shrink-0 items-center justify-center rounded-2xl bg-sky-500/12 p-3 text-sky-600 dark:text-sky-300">
+              <Phone className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Calling shell is ready</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Spacious icon sizing prevents the SVG from getting squeezed.
+              </p>
             </div>
           </div>
-        ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1 pb-24 md:pb-6">
+        <div className="grid gap-3 xl:grid-cols-[1.3fr_0.9fr]">
+          <div className="glass-panel bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_55%),linear-gradient(135deg,rgba(255,255,255,0.92),rgba(240,249,255,0.88))] px-5 py-5 dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(15,23,42,0.76))]">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 min-w-[3.5rem] shrink-0 items-center justify-center rounded-2xl bg-sky-500/15 p-3 text-sky-600 shadow-sm shadow-sky-500/10 dark:text-sky-300">
+                <Phone className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700 dark:text-sky-300">
+                  Call hub
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white sm:text-xl">
+                  Built to breathe on mobile and desktop
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  The Calls tab now has stronger spacing, better hierarchy, and bottom-safe scrolling so content stays
+                  clear above the mobile navigation.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {['Mobile-safe spacing', 'Desktop-friendly layout', 'Protected call icon sizing'].map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-sky-200/70 bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:border-sky-400/20 dark:bg-slate-900/45 dark:text-sky-300"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            {[
+              { value: '48px', label: 'Minimum icon footprint', tone: 'sky' },
+              { value: '2 views', label: 'Balanced for phone and desktop', tone: 'emerald' },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className={`glass-panel px-4 py-4 ${
+                  stat.tone === 'emerald'
+                    ? 'bg-gradient-to-br from-white/85 to-emerald-50/85 dark:from-slate-900/72 dark:to-emerald-500/10'
+                    : 'bg-gradient-to-br from-white/85 to-sky-50/85 dark:from-slate-900/72 dark:to-sky-500/10'
+                }`}
+              >
+                <p className="text-2xl font-semibold text-slate-900 dark:text-white">{stat.value}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          {[
+            {
+              title: 'Start from your contacts',
+              body: 'Use the Contacts tab to keep your calling list tidy, then jump back here when live calling actions are connected.',
+            },
+            {
+              title: 'Comfortable on smaller screens',
+              body: 'Extra bottom padding keeps the last card visible instead of letting it disappear beneath the floating mobile nav.',
+            },
+            {
+              title: 'Icon spacing fixed',
+              body: 'The phone SVG now lives inside padded, non-shrinking containers so it keeps its proportions in compact rows.',
+            },
+            {
+              title: 'Ready for future actions',
+              body: 'This layout gives us clear room for recent calls, quick dial actions, and voice or video state once backend support lands.',
+            },
+          ].map((card) => (
+            <div
+              key={card.title}
+              className="glass-panel bg-gradient-to-br from-white/88 to-slate-50/92 px-5 py-5 dark:from-slate-900/76 dark:to-slate-900/52"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-11 w-11 min-w-[2.75rem] shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 p-2.5 text-sky-600 dark:text-sky-300">
+                  <Phone className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{card.body}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );
